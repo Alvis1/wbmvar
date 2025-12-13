@@ -4,10 +4,17 @@
   </head>
   <body>
     <a-scene>
-      <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
-      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-      <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
-      <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+
+      <a-box position="-1.50346 0.51496 -3" rotation="0 45 0" color="#4CC3D9"
+      animation__1="property: rotation; to: 0 360 0; loop: true; dur: 4000; easing: linear"
+      animation__2="property: color; from: #4CC3D9; to: #FC2600; dir: alternate; dur: 500; loop: true"></a-box>
+      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"
+      animation="property: position; to: 0 4.25 -5; dir: alternate; dur: 2000; loop: true; easing: easeInOutSine"></a-sphere>
+      <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"
+      animation__1="property: position; to: 3 0.75 -3; dir: alternate; dur: 500; loop: true; easing: easeInOutSine"
+      animation__2="property: height; to: 0.5; dir: alternate; dur: 1000; loop: true; easing: easeInOutSine"></a-cylinder>
+      <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"
+      animation="property: opacity; from: 1; to: 0; dir: alternate; dur: 2000; loop: true"></a-plane>
       <a-sky color="#ECECEC"></a-sky>
     </a-scene>
   </body>
