@@ -5,13 +5,22 @@
 
   <body>
     <a-scene>
+<a-asset>
+    <img id="env01" src="img/palmtrees01.webp"> 
+    <a-asset-item id="bucket-obj" src="objects\lowqbucket_02.glb"></a-asset-item>
+    <a-asset-item id="bucket02-obj" src="objects\lowqbucket_01.obj"></a-asset-item>
+</a-asset>
+
+
+
+<!--Objects-->
       <a-entity
-          id="composition" rotation="0 0 0">
+          id="composition" rotation="0 0 0" shadow>
           <a-box 
             id="123" 
             position="0 3.67116 -3.838" 
             color="#4CC3D9"
-            animation="property: rotation; to: 0 360 0; dur: 2000; loop: true; delay: 1100; easing: easeOutElastic"
+            animation="property: rotation; to: 0 360 0; dur: 2000; loop: true; delay: 1000; easing: easeOutElastic"
           ></a-box>
 
         <a-cylinder 
@@ -24,7 +33,7 @@
               position="0 -0.5 0" 
               radius="0.9" 
               color="#EF2D5E" 
-              material="color: red; metalness: 0.76" 
+              material="color: red; metalness: 0.76; roughness: 0" 
             ></a-cylinder>
       </a-cylinder>
 
@@ -37,17 +46,29 @@
                 height="1.5" 
                 color="#FFC65D" 
                 scale="1 1.36192 1" 
+                material="color: yellow; metalness: 0.76; roughness: 0; envMap: #env01" 
                 animation="dur: 1000; easing: linear; loop: true; dir: alternate; property: position; to: 0 2 0"></a-cylinder>
           </a-entity>
         </a-entity>
 
 
+<!--Custom Geometries-->    
+<a-entity shadow gltf-model="#bucket-obj" position="0.82995 0 -6.66368"></a-entity>
+<a-entity shadow obj-model="obj: #bucket02-obj" position="-0.82995 0 -6.66368"></a-entity>
 
+<!--Env-->
 
-
-
-      <a-plane position="0 0 -4" rotation="-90 0 0" width="100" height="100" color="#7BC8A4"></a-plane>
+      <a-plane shadow position="0 0 -4" rotation="-90 0 0" width="100" height="100" color="#7BC8A4"></a-plane>
       <a-sky color="#ECECEC"></a-sky>
+
+<!---------->
+<!--Lights-->
+<!---------->
+    
+<a-entity light="angle: 26.56; penumbra: 0.84; type: spot; castShadow: true" position="0.00392 2.33307 0" rotation="-4.132171618483497 0 0" id="spot01"></a-entity>
+<a-entity light="color: #999bff; intensity: 0.41; type: ambient" id="ambient"></a-entity>
+
+
     </a-scene>
   </body>
 </html>
