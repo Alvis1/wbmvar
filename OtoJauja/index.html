@@ -4,11 +4,26 @@
   </head>
   <body>
     <a-scene>
-      <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
-      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-      <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
-      <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
-      <a-sky color="#ECECEC"></a-sky>
+        <assets>
+            <a-asset-item id="robot-obj" src="objects/robot_01.glb"></a-asset-item>
+        </assets>
+
+        <a-entity id="stuff">
+            <a-entity id="box" position="-0.13838 0.5 -3">
+                <a-box rotation="0 45 0" color="#4CC3D9" animation="dur: 3000; easing: linear; loop: true; property: rotation; to: 0 360 0"></a-box>
+            </a-entity>
+            <a-sphere position="1.07188 0.92567 -2.68643" radius="1.25" color="#EF2D5E" animation="dur: 3000; easing: easeOutExpo; loop: true; property: position; to: 1 8 10" scale="0.25 0.25 0.25"></a-sphere>
+            <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D" rotation="45 0 0" animation="dur: 3000; loop: true; easing: easeOutElastic; property: rotation; to: 55 0 0"></a-cylinder>
+        </a-entity>
+
+        <a-entity shadow gltf-model="#robot-obj" position="0.82995 0 -6.66368"></a-entity>
+
+
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+        <a-sky color="#ECECEC"></a-sky>
+
+        <a-entity light="angle: 26.56; penumbra: 0.84; type: spot; castShadow: true" position="0.00392 2.33307 0" rotation="-4.132171618483497 0 0" id="spot01"></a-entity>
+        <a-entity light="color: #999bff; intensity: 0.41; type: ambient" id="ambient"></a-entity>
     </a-scene>
   </body>
 </html>
