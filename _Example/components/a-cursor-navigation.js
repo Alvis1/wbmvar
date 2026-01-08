@@ -1,5 +1,81 @@
-// Navigation - OPTIMIZED Combined Teleport Component
-// Optimized version with improved performance and reduced memory usage
+/**
+ * A-CURSOR NAVIGATION COMPONENTS
+ * ==============================
+ * A-Frame teleportation system using the a-cursor for consistent navigation
+ * in both desktop and VR modes.
+ * 
+ * COMPONENTS INCLUDED:
+ * --------------------
+ * 
+ * 1. navmesh
+ *    Marks a surface as teleportable. Add this attribute to any geometry
+ *    where users should be able to teleport.
+ * 
+ *    Example:
+ *    <a-plane navmesh position="0 0 0" rotation="-90 0 0" width="10" height="10"></a-plane>
+ *    <a-entity navmesh gltf-model="#floor-model"></a-entity>
+ * 
+ * 
+ * 2. raycast-exclude  
+ *    Excludes an object from blocking teleportation. Objects with this
+ *    attribute won't prevent teleporting to navmesh surfaces behind them.
+ * 
+ *    Example:
+ *    <a-box raycast-exclude position="0 1 -3" material="opacity: 0.5"></a-box>
+ * 
+ * 
+ * 3. a-cursor-teleport
+ *    Main teleportation component. Attach to the camera rig entity.
+ * 
+ *    Schema Properties:
+ *    - cameraRig: Selector for the camera rig entity (default: "")
+ *    - cameraHead: Selector for the camera/head entity (default: "")  
+ *    - landingMaxAngle: Max surface angle in degrees for valid landing (default: 45)
+ *    - landingNormal: Expected up direction (default: {x:0, y:1, z:0})
+ *    - transitionSpeed: Teleport animation speed (default: 0.0006)
+ *    - cursorColor: Teleport indicator color (default: "#00ff00")
+ *    - cursorOpacity: Teleport indicator opacity (default: 1)
+ *    - alignToSurface: Align camera to surface normal (default: true)
+ *    - rotationSmoothing: Rotation interpolation factor (default: 1.0)
+ * 
+ *    Basic Example:
+ *    <a-entity id="cameraRig" a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
+ *      <a-entity id="head" camera look-controls>
+ *        <a-cursor></a-cursor>
+ *      </a-entity>
+ *    </a-entity>
+ *    <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="10" height="10"></a-plane>
+ * 
+ *    Full Example with all options:
+ *    <a-entity 
+ *      id="cameraRig"
+ *      a-cursor-teleport="
+ *        cameraRig: #cameraRig; 
+ *        cameraHead: #head;
+ *        cursorColor: #00ff00;
+ *        cursorOpacity: 0.8;
+ *        landingMaxAngle: 30;
+ *        transitionSpeed: 0.001">
+ *      <a-entity id="head" position="0 1.6 0" camera look-controls>
+ *        <a-cursor color="white"></a-cursor>
+ *      </a-entity>
+ *    </a-entity>
+ * 
+ * 
+ * HOW IT WORKS:
+ * -------------
+ * - The a-cursor casts a ray from the center of the screen
+ * - When hovering over a navmesh surface, a green ring indicator appears
+ * - Clicking teleports the camera rig to that location
+ * - Objects without raycast-exclude will block teleportation (occlusion)
+ * - Works consistently in both desktop browser and VR headset modes
+ * 
+ * 
+ * DEBUG MODE:
+ * -----------
+ * Add ?debug=true to URL to enable console logging for troubleshooting.
+ * 
+ */
 
 // Simple navmesh component - just marks an entity as a navigation mesh for teleportation
 AFRAME.registerComponent("navmesh", {
