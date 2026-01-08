@@ -1,0 +1,56 @@
+{
+  "EdijsNiksEglītis": [
+    {
+      "name": "index.html",
+      "path": "EdijsNiksEglītis/index.html"
+    }
+  ],
+  "LeoMaurel": [
+    {
+      "name": "index.html",
+      "path": "LeoMaurel/index.html"
+    }
+  ],
+  "LianaOzolina": [
+    {
+      "name": "index.html",
+      "path": "LianaOzolina/index.html"
+    }
+  ],
+  "MarisBulats": [
+    {
+      "name": "Index.html",
+      "path": "MarisBulats/Index.html"
+    }
+  ],
+  "MaryiaBrauer": [
+    {
+      "name": "index.html",
+      "path": "MaryiaBrauer/index.html"
+    }
+  ],
+  "OtoJauja": [
+    {
+      "name": "index.html",
+      "path": "OtoJauja/index.html"
+    }
+  ],
+  "_Example": [
+    {
+      "name": "01_mechanism.html",
+      "path": "_Example/01_mechanism.html"
+    },
+    {
+      "name": "02_rooms_functional.html",
+      "path": "_Example/02_rooms_functional.html"
+    },
+    {
+      "name": "bumbieris.html",
+      "path": "_Example/bumbieris.html"
+    },
+    {
+      "name": "pieciseshi.html",
+      "path": "_Example/pieciseshi.html"
+    }
+  ]
+}
