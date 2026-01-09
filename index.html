@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project File Browser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            border-bottom: 2px solid black;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: black;
+            font-size: 2em;
+            font-weight: normal;
+        }
+
+        .folders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .folder-card {
+            border: 1px solid black;
+            padding: 20px;
+        }
+
+        .folder-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: black;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid black;
+        }
+
+        .file-list {
+            list-style: none;
+        }
+
+        .file-item {
+            margin: 8px 0;
+        }
+
+        .file-link {
+            color: black;
+            text-decoration: none;
+            display: block;
+            padding: 5px 0;
+        }
+
+        .file-link:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: black;
+            font-size: 1.2em;
+        }
+
+        .error {
+            border: 1px solid black;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            border: 1px solid black;
+        }
+
+        .empty-state h2 {
+            color: black;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: black;
+        }
+
+        @media (max-width: 768px) {
+            .folders-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Web based VR and AR applications 2026</h1>
+        </header>
+
+        <div id="content">
+            <div class="loading">Loading files...</div>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval = null;
+        let lastModified = null;
+
+        // Load and display the file listing
+        async function loadListing() {
+            try {
+                const response = await fetch('files-listing.json?t=' + Date.now());
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load file listing');
+                }
+
+                const data = await response.json();
+                const lastMod = response.headers.get('last-modified');
+                
+                // Only update if content has changed
+                if (lastMod !== lastModified) {
+                    lastModified = lastMod;
+                    displayListing(data);
+                }
+            } catch (error) {
+                console.error('Error loading listing:', error);
+                document.getElementById('content').innerHTML = `
+                    <div class="error">
+                        <strong>Error:</strong> Could not load file listing. 
+                        Make sure to run <code>node generate-listing.js</code> first.
+                    </div>
+                `;
+            }
+        }
+
+        // Display the listing in the DOM
+        function displayListing(data) {
+            const content = document.getElementById('content');
+            const folders = Object.keys(data).sort();
+
+            if (folders.length === 0) {
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <h2>No HTML files found</h2>
+                        <p>Add HTML files to the project folders and refresh.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="folders-grid">';
+
+            folders.forEach(folderName => {
+                const files = data[folderName];
+                // Split name by capital letters (e.g., "LeoMaurel" -> "Leo Maurel")
+                const displayName = folderName.replace(/([a-z])([A-Z])/g, '$1 $2');
+                html += `
+                    <div class="folder-card">
+                        <div class="folder-name">${displayName}</div>
+                        <ul class="file-list">
+                `;
+
+                files.forEach(file => {
+                    html += `
+                        <li class="file-item">
+                            <a href="${file.path}" class="file-link" target="_blank">${file.name}</a>
+                        </li>
+                    `;
+                });
+
+                html += `
+                        </ul>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            content.innerHTML = html;
+        }
+
+        // Auto-refresh every 5 seconds
+        autoRefreshInterval = setInterval(loadListing, 5000);
+
+        // Initial load
+        loadListing();
+    </script>
+</body>
+</html>

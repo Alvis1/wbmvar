@@ -4,17 +4,29 @@
   </head>
   <body>
     <a-scene>
+
+    <!--Camera-->
+    <a-entity camera look-controls wasd-controls="acceleration: 20; wsAxis: y; wsInverted: true" position="0 0 2">
+        <a-cursor color="#00ffff"></a-cursor>
+    </a-entity>
+
+    <!--Mixin-->
         <a-assets>
-          <a-mixin id="moveright" animation="dur: 2000; easing: easeInOutElastic; loop: true; property: position; from: 2 0 0; to: -2 0 0"></a-mixin>
-          <a-mixin id="moveleft" animation="dur: 2000; easing: easeInOutElastic; loop: true; property: position; from: -2 0 0; to: 2 0 0"></a-mixin>
-          <a-mixin id="projectile" geometry="primitive: box" scale="0.4 0.2 0.2" ></a-mixin>
+          <a-mixin id="moveright" animation="dur: 2000; dir: alternate; easing: easeInOutElastic; loop: true; property: position; from: 2 0 -3; to: -2 0 -3"></a-mixin>
+          <a-mixin id="moveleft" animation="dur: 2000; dir: alternate; easing: easeInOutElastic; loop: true; property: position; from: -2 0 -3; to: 2 0 -3"></a-mixin>
+          <a-mixin id="projectile" geometry="primitive: box" scale="0.2 0.2 0.4" material="color: #000000; emissive: #fffa70" animation__click="dur: 1000; loop: false; property: position; from: 0 0 0; to: 0 0 -100; startEvents: click" ></a-mixin>
         </a-assets>
 
+    <!--Entities-->
         <a-entity mixin="projectile"></a-entity>
-        <a-sphere mixin="moveleft" radius="1.25" color="#EF2D5E" material="color: #008048; metalness: 1" geometry="primitive: dodecahedron"></a-sphere>
-        <a-sphere mixin="moveright" radius="1.25" color="#EF2D5E" material="color: #008048; metalness: 1" geometry="primitive: dodecahedron"></a-sphere>
+
+        <a-sphere mixin="moveleft" radius="1.25" color="#EF2D5E" material="color: #008048; emissive: #00478a; metalness: 1" geometry="primitive: dodecahedron" position="-2.18316 0 0"></a-sphere>
         
-    <a-sky color="#ECECEC"></a-sky>
+        <a-sphere mixin="moveright" radius="1.25" color="#EF2D5E" material="color: #000000; emissive: #00478a; metalness: 1" geometry="primitive: dodecahedron" position="1.4107 0 0"></a-sphere>
+        
+    <!--World-->
+    <a-sky color="#ECECEC" material="color: #000000"></a-sky>
+
     </a-scene>
   </body>
 </html>
