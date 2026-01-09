@@ -80,24 +80,47 @@
 // Simple navmesh component - just marks an entity as a navigation mesh for teleportation
 AFRAME.registerComponent("navmesh", {
     init() {
-        // Mark this entity as a navmesh for teleportation
+        this.markMeshes = this.markMeshes.bind(this);
+        this.markMeshes();
+        
+        // Handle GLTF models that load after component init
+        this.el.addEventListener('model-loaded', this.markMeshes);
+    },
+    
+    markMeshes() {
         this.el.object3D.traverse((obj) => {
             if (obj.isMesh) {
                 obj.userData.collision = true;
+                obj.userData.isNavmesh = true;
             }
         });
+    },
+    
+    remove() {
+        this.el.removeEventListener('model-loaded', this.markMeshes);
     }
 });
 
 // Exclude entity from raycast occlusion checking - objects with this won't block teleportation
 AFRAME.registerComponent("raycast-exclude", {
     init() {
-        // Mark this entity to be excluded from occlusion raycasting
+        this.markExcluded = this.markExcluded.bind(this);
+        this.markExcluded();
+        
+        // Handle GLTF models that load after component init
+        this.el.addEventListener('model-loaded', this.markExcluded);
+    },
+    
+    markExcluded() {
         this.el.object3D.traverse((obj) => {
             if (obj.isMesh) {
                 obj.userData.raycastExclude = true;
             }
         });
+    },
+    
+    remove() {
+        this.el.removeEventListener('model-loaded', this.markExcluded);
     }
 });
 
@@ -114,7 +137,9 @@ AFRAME.registerComponent("a-cursor-teleport", {
         cursorColor: { type: "color", default: "#00ff00" },
         cursorOpacity: { type: "number", default: 1 },
         alignToSurface: { type: "boolean", default: true },
-        rotationSmoothing: { type: "number", default: 1.0 }
+        rotationSmoothing: { type: "number", default: 1.0 },
+        dragThreshold: { type: "number", default: 8 }, // Pixels of movement to count as drag
+        indicatorSmoothing: { type: "number", default: 0.15 } // Position lerp factor (0-1, lower = smoother)
     },
 
     init() {
@@ -164,6 +189,11 @@ AFRAME.registerComponent("a-cursor-teleport", {
         // Mouse tracking (reused objects)
         this.mousePosition = { x: 0, y: 0 };
         this.mouseOriginalPosition = { x: 0, y: 0 };
+        
+        // Drag detection for desktop - prevents teleport during camera rotation
+        this.isDragging = false;
+        this.isMouseDown = false;
+        this.dragDistance = 0;
 
         // Bind methods once
         this.bindMethods();
@@ -177,13 +207,23 @@ AFRAME.registerComponent("a-cursor-teleport", {
 
     initializeCamera() {
         // Find camera once and cache it
+        if (!this.data.cameraHead || !this.data.cameraHead.object3D) {
+            console.warn("a-cursor-teleport: cameraHead selector not found or not ready");
+            return;
+        }
+        
+        this.cam = null;
         this.data.cameraHead.object3D.traverse((obj) => {
-            if (obj instanceof THREE.Camera) {
+            if (!this.cam && obj instanceof THREE.Camera) {
                 this.cam = obj;
                 if (this.debugMode) console.log("navigation-05: Camera found");
-                return; // Stop traversing once found
             }
         });
+        
+        if (!this.data.cameraRig || !this.data.cameraRig.object3D) {
+            console.warn("a-cursor-teleport: cameraRig selector not found or not ready");
+            return;
+        }
         this.camRig = this.data.cameraRig.object3D;
     },
 
@@ -213,6 +253,10 @@ AFRAME.registerComponent("a-cursor-teleport", {
         this.teleportQuaternion = new THREE.Quaternion();
         this.upVector = new THREE.Vector3(0, 1, 0);
         this.ndcMouse = new THREE.Vector2();
+        
+        // Indicator smoothing - target position for lerping
+        this.indicatorTargetPosition = new THREE.Vector3();
+        this.indicatorTargetQuaternion = new THREE.Quaternion();
 
         // Initialize counters
         this.lastCollisionCount = 0;
@@ -254,6 +298,11 @@ AFRAME.registerComponent("a-cursor-teleport", {
         this.hideCursor = this.hideCursor.bind(this);
         this.checkVRMode = this.checkVRMode.bind(this);
         this.setupVRSessionListeners = this.setupVRSessionListeners.bind(this);
+        
+        // Desktop drag detection handlers
+        this.onMouseDown = this.onMouseDown.bind(this);
+        this.onMouseMove = this.onMouseMove.bind(this);
+        this.onMouseUp = this.onMouseUp.bind(this);
     },
 
     checkVRMode() {
@@ -338,6 +387,14 @@ AFRAME.registerComponent("a-cursor-teleport", {
             
             // Create unified click handler for both VR and desktop
             this.cursorClickHandler = (event) => {
+                // On desktop (non-VR, non-mobile), check if this was a drag operation
+                if (!this.isVR && !this.mobile) {
+                    if (this.isDragging) {
+                        if (this.debugMode) console.log("navigation-05: Click ignored - was a drag operation (distance:", this.dragDistance.toFixed(1), "px)");
+                        return; // Don't teleport if user was dragging to rotate camera
+                    }
+                }
+                
                 if (this.debugMode) console.log("navigation-05: Cursor click (VR:", this.isVR, ")");
                 
                 const teleportData = this.getTeleportPositionFromCursor();
@@ -440,20 +497,20 @@ AFRAME.registerComponent("a-cursor-teleport", {
         }
     },
 
-    getMouseState() {
+    getMouseState(event) {
         // Optimized mouse state using cached objects
-        return (event) => {
-            const rect = this.canvas.getBoundingClientRect();
-            if (event.clientX != null) {
-                this.mousePosition.x = event.clientX - rect.left;
-                this.mousePosition.y = event.clientY - rect.top;
-                return this.mousePosition;
-            } else if (event.touches && event.touches[0]) {
-                this.mousePosition.x = event.touches[0].clientX - rect.left;
-                this.mousePosition.y = event.touches[0].clientY - rect.top;
-                return this.mousePosition;
-            }
-        };
+        if (!this.canvas) return null;
+        const rect = this.canvas.getBoundingClientRect();
+        if (event.clientX != null) {
+            this.mousePosition.x = event.clientX - rect.left;
+            this.mousePosition.y = event.clientY - rect.top;
+            return this.mousePosition;
+        } else if (event.touches && event.touches[0]) {
+            this.mousePosition.x = event.touches[0].clientX - rect.left;
+            this.mousePosition.y = event.touches[0].clientY - rect.top;
+            return this.mousePosition;
+        }
+        return null;
     },
 
     getTeleportPositionFromCursor() {
@@ -485,7 +542,8 @@ AFRAME.registerComponent("a-cursor-teleport", {
         
         const intersect = firstHit;
         
-        if (!this.isValidNormalsAngle(intersect.face.normal, intersect.object) || 
+        // Ensure face data exists (some geometries may not have face normals)
+        if (!intersect.face || !this.isValidNormalsAngle(intersect.face.normal, intersect.object) || 
             intersect.object.userData.collision !== true) {
             return false;
         }
@@ -506,33 +564,31 @@ AFRAME.registerComponent("a-cursor-teleport", {
         return this.getTeleportPositionFromCursor();
     },
 
-    getTeleportPosition() {
+    getTeleportPosition(x, y) {
         // Optimized teleport position calculation with cached objects
-        return (x, y) => {
-            if (this.rayCastObjects.length === 0 || !this.cam || !this.canvas) return false;
+        if (this.rayCastObjects.length === 0 || !this.cam || !this.canvas) return false;
 
-            const rect = this.canvas.getBoundingClientRect();
-            this.ndcMouse.x = (x / (rect.right - rect.left)) * 2 - 1;
-            this.ndcMouse.y = -(y / (rect.bottom - rect.top)) * 2 + 1;
+        const rect = this.canvas.getBoundingClientRect();
+        this.ndcMouse.x = (x / (rect.right - rect.left)) * 2 - 1;
+        this.ndcMouse.y = -(y / (rect.bottom - rect.top)) * 2 + 1;
 
-            this.rayCaster.setFromCamera(this.ndcMouse, this.cam);
-            const intersects = this.rayCaster.intersectObjects(this.rayCastObjects);
+        this.rayCaster.setFromCamera(this.ndcMouse, this.cam);
+        const intersects = this.rayCaster.intersectObjects(this.rayCastObjects);
 
-            if (intersects.length === 0) return false;
-            
-            const intersect = intersects[0];
-            if (!this.isValidNormalsAngle(intersect.face.normal, intersect.object) || 
-                intersect.object.userData.collision !== true) return false;
+        if (intersects.length === 0) return false;
+        
+        const intersect = intersects[0];
+        if (!intersect.face || !this.isValidNormalsAngle(intersect.face.normal, intersect.object) || 
+            intersect.object.userData.collision !== true) return false;
 
-            // Reuse matrix and vector calculations
-            this.collisionObjectNormalMatrix.getNormalMatrix(intersect.object.matrixWorld);
-            const worldNormal = this.tempVector3.copy(intersect.face.normal)
-                .applyMatrix3(this.collisionObjectNormalMatrix).normalize();
+        // Reuse matrix and vector calculations
+        this.collisionObjectNormalMatrix.getNormalMatrix(intersect.object.matrixWorld);
+        const worldNormal = this.tempVector3.copy(intersect.face.normal)
+            .applyMatrix3(this.collisionObjectNormalMatrix).normalize();
 
-            return {
-                point: intersect.point,
-                normal: worldNormal
-            };
+        return {
+            point: intersect.point,
+            normal: worldNormal
         };
     },
 
@@ -609,16 +665,12 @@ AFRAME.registerComponent("a-cursor-teleport", {
     },
 
     mouseMove(event) {
-        const mouseState = this.getMouseState()(event);
-        if (mouseState) {
-            this.mousePosition.x = mouseState.x;
-            this.mousePosition.y = mouseState.y;
-        }
+        this.getMouseState(event);
     },
 
     mouseDown(event) {
         this.updateRaycastObjects();
-        const mouseState = this.getMouseState()(event);
+        const mouseState = this.getMouseState(event);
         if (mouseState) {
             this.mouseOriginalPosition.x = mouseState.x;
             this.mouseOriginalPosition.y = mouseState.y;
@@ -630,7 +682,7 @@ AFRAME.registerComponent("a-cursor-teleport", {
         if (this.mousePosition.x === this.mouseOriginalPosition.x && 
             this.mousePosition.y === this.mouseOriginalPosition.y) {
             
-            const teleportData = this.getTeleportPosition()(this.mousePosition.x, this.mousePosition.y);
+            const teleportData = this.getTeleportPosition(this.mousePosition.x, this.mousePosition.y);
             if (teleportData) {
                 this.teleportIndicator.position.copy(teleportData.point);
                 
@@ -645,6 +697,39 @@ AFRAME.registerComponent("a-cursor-teleport", {
         }
     },
 
+    // Desktop drag detection methods - distinguish click from camera rotation drag
+    onMouseDown(event) {
+        this.isMouseDown = true;
+        this.isDragging = false;
+        this.dragDistance = 0;
+        this.mouseOriginalPosition.x = event.clientX;
+        this.mouseOriginalPosition.y = event.clientY;
+    },
+
+    onMouseMove(event) {
+        if (!this.isMouseDown) return;
+        
+        // Calculate distance moved since mousedown
+        const dx = event.clientX - this.mouseOriginalPosition.x;
+        const dy = event.clientY - this.mouseOriginalPosition.y;
+        this.dragDistance = Math.sqrt(dx * dx + dy * dy);
+        
+        // If moved beyond threshold, mark as dragging
+        if (this.dragDistance > this.data.dragThreshold) {
+            this.isDragging = true;
+        }
+    },
+
+    onMouseUp(event) {
+        // Keep isDragging state until after the click event fires
+        // Reset after a microtask to ensure click handler sees the drag state
+        setTimeout(() => {
+            this.isMouseDown = false;
+            this.isDragging = false;
+            this.dragDistance = 0;
+        }, 0);
+    },
+
     easeInOutQuad(t) {
         return t < 0.5 ? 2 * t * t : (4 - 2 * t) * t - 1;
     },
@@ -653,6 +738,13 @@ AFRAME.registerComponent("a-cursor-teleport", {
         // Setup cursor for all modes (VR and desktop)
         this.setupCursor();
         window.addEventListener("keydown", this.hideCursor, false);
+        
+        // Desktop drag detection - track mouse movement to distinguish click from drag
+        if (!this.mobile) {
+            this.canvas.addEventListener('mousedown', this.onMouseDown, false);
+            this.canvas.addEventListener('mousemove', this.onMouseMove, false);
+            this.canvas.addEventListener('mouseup', this.onMouseUp, false);
+        }
         
         if (this.isVR) {
             this.initializeTunnelForVR();
@@ -663,6 +755,13 @@ AFRAME.registerComponent("a-cursor-teleport", {
         this.transitioning = false;
         this.hideCursor();
         window.removeEventListener("keydown", this.hideCursor);
+        
+        // Clean up desktop drag detection listeners
+        if (!this.mobile && this.canvas) {
+            this.canvas.removeEventListener('mousedown', this.onMouseDown);
+            this.canvas.removeEventListener('mousemove', this.onMouseMove);
+            this.canvas.removeEventListener('mouseup', this.onMouseUp);
+        }
     },
 
     tick(time, deltaTime) {
@@ -706,19 +805,30 @@ AFRAME.registerComponent("a-cursor-teleport", {
             }
             
             if (teleportPos) {
+                const wasHidden = !this.teleportIndicator.visible;
                 this.teleportIndicator.visible = true;
                 const position = teleportPos.point || teleportPos;
-                this.teleportIndicator.position.copy(position);
                 
+                // Calculate target position (with surface offset if needed)
                 if (this.data.alignToSurface && teleportPos.normal) {
-                    const offsetPosition = this.tempVector3_2.copy(position)
+                    this.indicatorTargetPosition.copy(position)
                         .add(this.tempVector3.copy(teleportPos.normal).multiplyScalar(0.01));
-                    this.teleportIndicator.position.copy(offsetPosition);
                     
                     this.teleportQuaternion.setFromUnitVectors(this.upVector, teleportPos.normal);
-                    this.teleportIndicator.quaternion.copy(this.teleportQuaternion);
+                    this.indicatorTargetQuaternion.copy(this.teleportQuaternion);
                 } else {
-                    this.teleportIndicator.quaternion.identity();
+                    this.indicatorTargetPosition.copy(position);
+                    this.indicatorTargetQuaternion.identity();
+                }
+                
+                // If indicator just became visible, snap directly to position (no lerp)
+                // Otherwise smooth lerp to eliminate jitter/vibration
+                if (wasHidden) {
+                    this.teleportIndicator.position.copy(this.indicatorTargetPosition);
+                    this.teleportIndicator.quaternion.copy(this.indicatorTargetQuaternion);
+                } else {
+                    this.teleportIndicator.position.lerp(this.indicatorTargetPosition, this.data.indicatorSmoothing);
+                    this.teleportIndicator.quaternion.slerp(this.indicatorTargetQuaternion, this.data.indicatorSmoothing);
                 }
             } else {
                 this.teleportIndicator.visible = false;
@@ -755,6 +865,19 @@ AFRAME.registerComponent("a-cursor-teleport", {
         }
     },
 
+    update(oldData) {
+        // Handle schema property changes at runtime
+        if (oldData.cursorColor !== this.data.cursorColor && this.teleportIndicator) {
+            this.teleportIndicator.material.color.set(this.data.cursorColor);
+        }
+        if (oldData.cursorOpacity !== this.data.cursorOpacity && this.teleportIndicator) {
+            this.teleportIndicator.material.opacity = this.data.cursorOpacity;
+        }
+        if (oldData.landingNormal !== this.data.landingNormal) {
+            this.referenceNormal.copy(this.data.landingNormal);
+        }
+    },
+
     remove() {
         // Proper cleanup to prevent memory leaks
         this.cam = null;
@@ -764,6 +887,11 @@ AFRAME.registerComponent("a-cursor-teleport", {
         if (this.vrCursor && this.vrCursorClickHandler) {
             this.vrCursor.removeEventListener('click', this.vrCursorClickHandler);
             this.vrCursorClickHandler = null;
+        }
+        
+        if (this.cursorEl && this.cursorClickHandler) {
+            this.cursorEl.removeEventListener('click', this.cursorClickHandler);
+            this.cursorClickHandler = null;
         }
         
         if (this.teleportIndicator) {
@@ -961,10 +1089,11 @@ AFRAME.registerComponent("pinch-teleport-02", {
             this.teleportRing = null;
         }
 
-        // Remove all event listeners
-        const events = ['pinchstarted', 'triggerdown', 'gripdown', 'pinchended', 'triggerup', 'gripup'];
-        events.forEach(event => this.el.removeEventListener(event, this.onPinchStarted));
-        events.forEach(event => this.el.removeEventListener(event, this.onPinchEnded));
+        // Remove all event listeners with correct handler references
+        const startEvents = ['pinchstarted', 'triggerdown', 'gripdown'];
+        const endEvents = ['pinchended', 'triggerup', 'gripup'];
+        startEvents.forEach(event => this.el.removeEventListener(event, this.onPinchStarted));
+        endEvents.forEach(event => this.el.removeEventListener(event, this.onPinchEnded));
     }
 });
 
