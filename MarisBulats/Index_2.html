@@ -1,6 +1,12 @@
+<!--Components 1: functional-->
+      <!--event-set-->
+      <!--obb-collider-->
+      <!--Hand tracking and grabbing-->
+      <!--aframe-extras 7.6.1-->
+
 <html>
   <head>
-      <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
 
  <!--Event-Set Component-->
     <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
@@ -9,21 +15,34 @@
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
  
  <!--navigation component used in ImGame -->   
-    <script src="a-cursor-navigation.js"></script>
+    <script src="components/a-cursor-navigation.js"></script>
+
   </head>
   <body>
-      <a-scene> <a-box 
+    <a-scene obb-collider="showColliders: false">
+
+<!--Pinc Cursor Click-->
+      <a-box 
         position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"
         event-set__enter="_event: mouseenter; color: red"
         event-set__leave="_event: mouseleave; color: #4CC3D9"
         animation__click="property: scale; from: 1 1 1; to: 1.5 1.5 1.5; dur: 100; dir: alternate; loop: 1; easing: easeInOutCirc; startEvents: click; "
         ></a-box>
-        <a-sky color="#B8D7E6"></a-sky>
-         <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+
+<!--Grabbing-->
+        <a-cylinder grabbable=" hoverEnabled: true; hoverColor: #red;" position="0 1.0289 -0.38727" radius="0.5" height="1.5" color="#FFC65D" scale="0.3 0.3 0.3" rotation="0 0 -48.13475732673559"></a-cylinder>
+
+
+      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
+
+
+        
+      <!--Camera with cursor and hand tracking enabled. Pinch gesture as click event-->
+
       <a-entity 
         position="0 0 0" 
         id="cameraRig" 
-        movement-controls="speed: 1.01; enabled:true"
+        movement-controls="speed: 1.01; enabled:false"
         a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
         <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
           <a-cursor color="white"></a-cursor>
@@ -31,7 +50,16 @@
         <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
         <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
       </a-entity>
-      </a-scene>
+
+        
+
+
+
+      <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+      <a-sky color="#ECECEC"></a-sky>
       
+
+
+    </a-scene>
   </body>
 </html>
