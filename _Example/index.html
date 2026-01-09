@@ -12,6 +12,9 @@
  
 <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
 
+<!-- Custom component for animation switching on hover -->
+<script src="components/animation-switcher.js"></script>
+
   </head>
   <body>
     <a-scene obb-collider="showColliders: false">
@@ -40,7 +43,13 @@
 
 
         <!--Obst-->
-        <a-entity gltf-model="#char" animation-mixer="clip: Jumping" position="0 0.01223 -3.81011" scale="0.8 0.8 0.8"></a-entity>
+        <a-entity gltf-model="#char" 
+          class="clickable"
+          animation-mixer="clip: Jumping; loop: repeat" 
+          animation-on-hover="defaultClip: Jumping; hoverClip: HeadTurning"
+          position="0 0.01223 -3.81011" 
+          scale="0.8 0.8 0.8"
+        ></a-entity>
 
 
 
@@ -53,7 +62,7 @@
         movement-controls="speed: 1.01; enabled:false"
         a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
         <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
-          <a-cursor color="white"></a-cursor>
+          <a-cursor color="white" raycaster="objects: .clickable, a-box, a-sphere, a-cylinder, a-plane, [navmesh]"></a-cursor>
         </a-entity>
         <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
         <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
