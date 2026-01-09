@@ -55,14 +55,12 @@
       <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="8" height="8" color="#7BC8A4"></a-plane>
 
          <a-plane id="2ndroom" navmesh="" position="10.8963 0 -4" rotation="0 0 0" width="8" height="8" color="#7BC8A4"></a-plane>
- <a-entity 
-        position="0 0 0" 
-        id="cameraRig" 
-        movement-controls="speed: 1.01; enabled:false"
-        a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
-        <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
-          <a-cursor color="white" raycaster="objects: .clickable, a-box, a-sphere, a-cylinder, a-plane, [navmesh]"></a-cursor>
-        </a-entity>
+ 
+ 
+      <a-camera a-cursor-teleport="cameraHeight: 1.6" look-controls="pointerLockEnabled: true" >
+    <a-cursor></a-cursor>
+    </a-camera>
+
         <a-entity id="leftHand" improved-hand-grab="hand: left;"></a-entity>
         <a-entity id="rightHand" improved-hand-grab="hand: right;"></a-entity>
       </a-entity>
