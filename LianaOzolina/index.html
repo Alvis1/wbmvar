@@ -21,25 +21,31 @@
   <body>
     <a-scene obb-collider="showColliders: false">
 
-<!--Pinc Cursor Click-->
+<!--Assets-->
+  <a-asset>
+        <a-asset-item id="Floor" src="objects/PlaneFloor.glb"></a-asset-item>
+        <a-asset-item id="Navm" src="PlaneNav.glb"></a-asset-item>
+  </a-asset>
+
+
+<!--Pinc Cursor Click
 <a-mixin
-      
+      <a-entity
         position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"
         event-set__enter="_event: mouseenter; color: white"
         event-set__leave="_event: mouseleave; color: #4CC3D9"
         animation__click="property: scale; from: 1 1 1; to: 0.0001 0.0001 0.0001; dur: 100; easing: easeInQuad; startEvents: click; "
-      
-></a-mixin>
-
-<!--Grabbing-->
-        <a-cylinder grabbable=" hoverEnabled: true; hoverColor: #red;" position="0 1.0289 -0.38727" radius="0.5" height="1.5" color="#FFC65D" scale="0.3 0.3 0.3" rotation="0 0 -48.13475732673559"></a-cylinder>
-
-
-      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-
-
-        
+      ></a-entity>
+></a-mixin>-->
+   
       <!--Camera with cursor and hand tracking enabled. Pinch gesture as click event-->
+
+      <a-entity 
+      position="0 0 0"
+      id="PlaneFloor"
+      color="white"
+      ></a-entity>
+
 
       <a-entity 
         position="0 0 0" 
@@ -54,7 +60,7 @@
       </a-entity>
 
       <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
-      <a-sky color="#ECECEC"></a-sky>
+      <a-sky color="#000000"></a-sky>
 
     </a-scene>
   </body>
