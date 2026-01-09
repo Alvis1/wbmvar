@@ -4,9 +4,18 @@
   </head>
   <body>
     <a-scene>
-      <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
-      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-      <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
+      <a-entity id="composition" rotation="0 45 0">
+        <a-entity id="mouseCursor" cursor="rayOrigin: mouse"></a-entity>
+        <a-box position="3.81059 3.60435 -2.95671" rotation="0 45 0" material="color: red" scale="0.87073 0.54904 0.3917"
+          animation__color="property: components.material.material.color; type: color; to: green; startEvents: mouseenter; dur: 200";
+          animation__mouseleave="property: components.material.material.color; type: color; to: red; startEvents: mouseleave; dur: 200";>
+        </a-box>
+        <a-sphere position="1.95726 1.12308 -3.01323" radius="1.25" color="#EF2D5E" material="color: #2d1a1f"></a-sphere>
+        <a-cylinder position="1.97801 2.0802 -3.05865" radius="0.5" height="1.5" color="#FFC65D" rotation="6.481871536315003 -3.0762104020573906 7.305784845713128" scale="1 0.38234 1"
+          animation="property: position; to: 1.8 3.2 -3; dur: 5000"
+          animation__2="property: rotation; to: 0 360 0; loop: true; dur: 5000">
+        </a-cylinder>
+      </a-entity>
       <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
       <a-sky color="#ECECEC"></a-sky>
     </a-scene>
