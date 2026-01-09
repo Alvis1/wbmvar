@@ -1,14 +1,64 @@
 <html>
   <head>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
+
+    <script src="components/a-cursor-navigation.js"></script>
+    <script src="components/toggle-click-pos-anim.js"></script>
   </head>
   <body>
-    <a-scene>
-      <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
-      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-      <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
-      <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+    <a-scene reflection="directionalLight:a-light#scene-light;">
+      <a-entity
+        position="0 0 0"
+        id="cameraRig"
+        movement-controls="speed: 1.01; enabled:false"
+        a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
+        <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
+          <a-cursor color="white"></a-cursor>
+        </a-entity>
+        <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
+        <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
+      </a-entity>
+
       <a-sky color="#ECECEC"></a-sky>
+      <a-light id="scene-light" color="#8F45B3"></a-light>
+
+      <a-plane navmesh position="0 0 -1" rotation="-90 0 0" width="6" height="10" color="#7BC8A4"></a-plane>
+      <a-plane navmesh position="0 0 7" rotation="-90 0 0" width="6" height="6" color="#7BC8A4"></a-plane>
+
+      <a-dodecahedron
+        raycast-exclude
+        position="-2.5 1 -5.5"
+        radius="0.5"
+        color="#AA00FF"
+        animation="property: position; to: 2.5 1 -5.5; dur: 2000; easing: linear; loop: true; dir: alternate">
+      </a-dodecahedron>
+
+      <a-box position="1.8 1.5 4" scale="2.4 3 0.1" color="#00E1FF"></a-box>
+      <a-box position="-1.8 1.5 4" scale="2.4 3 0.1" color="#00E1FF"></a-box>
+      <a-cylinder
+        position="0 1.5 4"
+        radius="0.6"
+        height="3"
+        color="#2AEFA0"
+        event-set__enter="_event: mouseenter; color: red"
+        event-set__leave="_event: mouseleave; color: #2AEFA0"
+        animation__click="property: position; to: 0 -1.4 4; dur: 2000; easing: easeInOutCirc; dir: alternate; startEvents: click">
+      </a-cylinder>
+      <!-- <a-cylinder
+        position="0 1.5 4"
+        radius="0.6"
+        height="3"
+        color="#2AEFA0"
+        event-set__enter="_event: mouseenter; color: red"
+        event-set__leave="_event: mouseleave; color: #2AEFA0"
+        toggle-click-pos-anim="to: 0 -1.4 4; dur: 2000; easing: easeInOutCirc">
+      </a-cylinder> -->
+
+      <a-assets>
+        <a-asset-item id="trebuchet" src="objects/trebuchet.glb"></a-asset-item>
+      </a-assets>
+      <a-entity gltf-model="#trebuchet" position="-2 1 -4" rotation="0 45 0"></a-entity>
     </a-scene>
   </body>
 </html>
