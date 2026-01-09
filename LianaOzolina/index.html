@@ -1,31 +1,60 @@
+<!--Components 1: functional-->
+      <!--event-set-->
+      <!--obb-collider-->
+      <!--Hand tracking and grabbing-->
+      <!--aframe-extras 7.6.1-->
+
 <html>
   <head>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+
+ <!--Event-Set Component-->
+    <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
+
+<!--A-Frame Extras-->
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+ 
+ <!--navigation component used in ImGame -->   
+    <script src="a-cursor-navigation.js"></script>
+
   </head>
   <body>
-    <a-scene>
+    <a-scene obb-collider="showColliders: false">
 
-    <!--Camera-->
-    <a-entity camera look-controls wasd-controls="acceleration: 20; wsAxis: y; wsInverted: true" position="0 0 2">
-        <a-cursor color="#00ffff"></a-cursor>
-    </a-entity>
+<!--Pinc Cursor Click-->
+<a-mixin
+      
+        position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"
+        event-set__enter="_event: mouseenter; color: white"
+        event-set__leave="_event: mouseleave; color: #4CC3D9"
+        animation__click="property: scale; from: 1 1 1; to: 0.0001 0.0001 0.0001; dur: 100; easing: easeInQuad; startEvents: click; "
+      
+></a-mixin>
 
-    <!--Mixin-->
-        <a-assets>
-          <a-mixin id="moveright" animation="dur: 2000; dir: alternate; easing: easeInOutElastic; loop: true; property: position; from: 2 0 -3; to: -2 0 -3"></a-mixin>
-          <a-mixin id="moveleft" animation="dur: 2000; dir: alternate; easing: easeInOutElastic; loop: true; property: position; from: -2 0 -3; to: 2 0 -3"></a-mixin>
-          <a-mixin id="projectile" geometry="primitive: box" scale="0.2 0.2 0.4" material="color: #000000; emissive: #fffa70" animation__click="dur: 1000; loop: false; property: position; from: 0 0 0; to: 0 0 -100; startEvents: click" ></a-mixin>
-        </a-assets>
+<!--Grabbing-->
+        <a-cylinder grabbable=" hoverEnabled: true; hoverColor: #red;" position="0 1.0289 -0.38727" radius="0.5" height="1.5" color="#FFC65D" scale="0.3 0.3 0.3" rotation="0 0 -48.13475732673559"></a-cylinder>
 
-    <!--Entities-->
-        <a-entity mixin="projectile"></a-entity>
 
-        <a-sphere mixin="moveleft" radius="1.25" color="#EF2D5E" material="color: #008048; emissive: #00478a; metalness: 1" geometry="primitive: dodecahedron" position="-2.18316 0 0"></a-sphere>
+      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
+
+
         
-        <a-sphere mixin="moveright" radius="1.25" color="#EF2D5E" material="color: #000000; emissive: #00478a; metalness: 1" geometry="primitive: dodecahedron" position="1.4107 0 0"></a-sphere>
-        
-    <!--World-->
-    <a-sky color="#ECECEC" material="color: #000000"></a-sky>
+      <!--Camera with cursor and hand tracking enabled. Pinch gesture as click event-->
+
+      <a-entity 
+        position="0 0 0" 
+        id="cameraRig" 
+        movement-controls="speed: 1.01; enabled:false"
+        a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
+        <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
+          <a-cursor color="white"></a-cursor>
+        </a-entity>
+        <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
+        <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
+      </a-entity>
+
+      <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+      <a-sky color="#ECECEC"></a-sky>
 
     </a-scene>
   </body>
