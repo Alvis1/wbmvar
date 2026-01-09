@@ -1,0 +1,80 @@
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+
+ <!--Event-Set Component-->
+    <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
+ <!--navigation component used in ImGame -->   
+    <script src="components/a-cursor-navigation.js"></script>
+
+<!--A-Frame Extras-->
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+
+ 
+<script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
+
+<!-- Custom component for animation switching on hover -->
+<script src="components/animation-switcher.js"></script>
+
+  </head>
+  <body>
+    <a-scene obb-collider="showColliders: false">
+
+    <a-asset>
+        <a-asset-item id="char" src="objects/char01.glb"></a-asset-item>
+         <a-asset-item id="table" src="table.glb"></a-asset-item>
+    </a-asset>
+
+      <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
+
+
+
+      <a-sphere position="0 1.25 -10" radius="1.25" color="#EF2D5E"
+        event-set__entergreen="_event: mouseenter; color: green"
+        event-set__leave="_event: mouseleave; color: #EF2D5E"
+        animation__click="property: scale; from: 1 1 1; to: 1.5 1.5 1.5; dur: 100; dir: alternate; loop: 1; easing: easeInOutCirc; startEvents: click"
+    
+      ></a-sphere>
+
+
+
+      <a-cylinder grabbable position="1 1 1" radius="0.2" height="0.5" color="#FFC65D"></a-cylinder>
+      
+      <a-sky color="#ECECEC"></a-sky>
+
+
+        <!--Obst-->
+        <a-entity gltf-model="#char" 
+          class="clickable"
+          animation-on-hover="defaultClip: Jumping; hoverClip: HeadTurning"
+          position="0 0.01223 -3.81011" 
+          scale="0.8 0.8 0.8"
+        ></a-entity>
+
+
+
+      <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="8" height="8" color="#7BC8A4"></a-plane>
+
+         <a-plane id="2ndroom" navmesh="" position="10.8963 0 -4" rotation="0 0 0" width="8" height="8" color="#7BC8A4"></a-plane>
+ <a-entity 
+        position="0 0 0" 
+        id="cameraRig" 
+        movement-controls="speed: 1.01; enabled:false"
+        a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
+        <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
+          <a-cursor color="white" raycaster="objects: .clickable, a-box, a-sphere, a-cylinder, a-plane, [navmesh]"></a-cursor>
+        </a-entity>
+        <a-entity id="leftHand" improved-hand-grab="hand: left;"></a-entity>
+        <a-entity id="rightHand" improved-hand-grab="hand: right;"></a-entity>
+      </a-entity>
+
+      <a-entity position="0 -2 0" id="env" environment="preset: threetowers; skyType: gradient; ground: spikes; groundDensity: 63.27"><a-entity class="environment" position="0 50 0" light="color: #91d0b5; groundColor: #273a49; intensity: 1.884; type: hemisphere"></a-entity><a-entity class="environment" position="0.5 1 0" light="intensity: 1.884; shadowCameraTop: 10; shadowCameraRight: 10; shadowCameraBottom: -10; shadowCameraLeft: -10"></a-entity><a-entity rotation="-90 0 0" class="environmentGround environment" scale="1 1 4.26" shadow="cast: false; receive: false"></a-entity><a-entity class="environmentDressing environment"></a-entity><a-sky radius="200" theta-length="110" class="environment" material="shader: gradientshader; topColor: [object Object]; bottomColor: [object Object]"></a-sky></a-entity>
+
+     <!-- <a-camera> <a-cursor></a-cursor></a-camera>
+
+        <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
+        <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity> -->
+
+    </a-scene>
+  </body>
+</html>

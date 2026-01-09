@@ -1,29 +1,68 @@
 <html>
   <head>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+
+    <!--Event-Set Component-->
+    <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
+
+    <!--A-Frame Extras-->
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+
+    <!--navigation component used in ImGame -->   
+    <script src="a-cursor-navigation.js"></script>
+
+    <!--aframe-environment-component-->  
+    <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
+
   </head>
   <body>
     <a-scene>
+        <!--Assets-->
         <assets>
             <a-asset-item id="robot-obj" src="objects/robot_01.glb"></a-asset-item>
+            <a-asset-item id="char_dance" src="objects/character.glb"></a-asset-item>
         </assets>
 
         <a-entity id="stuff">
             <a-entity id="box" position="-0.13838 0.5 -3">
-                <a-box rotation="0 45 0" color="#4CC3D9" animation="dur: 3000; easing: linear; loop: true; property: rotation; to: 0 360 0"></a-box>
+                <a-box rotation="0 45 0" color="#4CC3D9" animation="dur: 3000; easing: linear; loop: true; property: rotation; to: 0 360 0"
+                event-set__enter="_event: mouseenter; color: green"
+                event-set__leave="_event: mouseleave; color: #4CC3D9"
+                animation__click="property: scale; from: 1 1 1; to: 1.5 1.5 1.5; dur: 100; dir: alternate; loop: 1; easing: easeInOutCirc; startEvents: click; "></a-box>
             </a-entity>
-            <a-sphere position="1.07188 0.92567 -2.68643" radius="1.25" color="#EF2D5E" animation="dur: 3000; easing: easeOutExpo; loop: true; property: position; to: 1 8 10" scale="0.25 0.25 0.25"></a-sphere>
-            <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D" rotation="45 0 0" animation="dur: 3000; loop: true; easing: easeOutElastic; property: rotation; to: 55 0 0"></a-cylinder>
+            <a-sphere position="1.07188 0.92567 -2.68643" radius="1.25" color="#EF2D5E" animation="dur: 3000; easing: easeOutExpo; loop: true; property: position; to: 1 8 10" scale="0.25 0.25 0.25">
+            </a-sphere>
         </a-entity>
 
-        <a-entity shadow gltf-model="#robot-obj" position="0.82995 0 -6.66368"></a-entity>
+        <!--Objects-->
+        <a-entity shadow gltf-model="objects/character.glb" animation-mixer="clip: Dancing" position="0 0 -4.97052" event-set__enter="_event: mouseenter; animation-mixer.clip: DancingHipHop"></a-entity>
 
 
-        <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+        <!--Env-->
+        <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#664735"></a-plane>
+        <a-plane navmesh position="0 0 0" rotation="-90 0 0" width="4" height="4" color="#664735"></a-plane>
+        <a-entity environment="preset: egypt" position="0 -0.5 0"></a-entity>
         <a-sky color="#ECECEC"></a-sky>
 
+
+         <!--Lights-->
         <a-entity light="angle: 26.56; penumbra: 0.84; type: spot; castShadow: true" position="0.00392 2.33307 0" rotation="-4.132171618483497 0 0" id="spot01"></a-entity>
         <a-entity light="color: #999bff; intensity: 0.41; type: ambient" id="ambient"></a-entity>
+
+        <!--Camera with cursor and hand tracking enabled. Pinch gesture as click event-->
+
+        <a-entity 
+          position="0 0 0" 
+          id="cameraRig" 
+          movement-controls="speed: 1.01; enabled:false"
+          a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
+          <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
+            <a-cursor color="white"></a-cursor>
+          </a-entity>
+          <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
+          <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
+        </a-entity>
+
     </a-scene>
   </body>
 </html>

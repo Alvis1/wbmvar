@@ -1,14 +1,63 @@
 <html>
-  <head>
-    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-  </head>
-  <body>
-    <a-scene>
-      <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
-      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-      <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
-      <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
-      <a-sky color="#ECECEC"></a-sky>
-    </a-scene>
-  </body>
+    <head>
+        <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+        <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/gh/c-frame/physx@v0.3.x/dist/physx.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+        <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
+        <script src="components/a-cursor-navigation.js"></script>
+    </head>
+    <body>
+        <a-scene obb-collider="showColliders: false" physx="autoLoad: false; wasmUrl: https://cdn.jsdelivr.net/gh/c-frame/physx@v0.3.x/wasm/physx.release.wasm">
+            <a-assets id="assets">
+                <a-asset-item id="railgun" src="res/models/railgun_turret.glb"></a-asset-item>
+            </a-assets>
+            <a-box physx-body="type: static" static-body position="-4.75456 0.5 2.27086" rotation="0 45 0" color="#4CC3D9"></a-box>
+            <a-sphere physx-body="type: static" static-body position="-6.39215 1.25 1.22674" radius="1.25" color="#EF2D5E"></a-sphere>
+            <a-cylinder physx-body="type: static" static-body position="-4.68713 0.75 0.07409" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
+            
+            <a-box physx-body="type: dynamic" position="-5.86982 3 0.95722" color="#F00" depth="0.5" height="0.5" width="0.5" material="color: #a600ff"></a-box>
+        
+            <a-box static-body="" position="4.9495 2.40293 -3.51869" color="#4CC3D9" material="color: #7BC8A4" scale="6.25001 4.9445 0.0663"></a-box>
+            <a-box static-body="" position="-4.88832 2.40293 -3.51869" color="#4CC3D9" material="color: #7BC8A4" scale="6.25001 4.9445 0.0663"></a-box>
+                 <a-box id="door" static-body="" position="0.03442 2.39725 -3.51869" color="#4CC3D9" material="color: #7a83c7" scale="3.77704 4.9445 0.04155"
+                     event-set__enter="_event: mouseenter; color: #a8aedc"
+                     event-set__leave="_event: mouseleave; color: #7a83c7"
+                     animation__open="property: position; to: 3.9 2.39725 -3.51869; dur: 2000; easing: easeInOutCubic; startEvents: click;"
+                     animation__close="property: position; to: 0.03442 2.39725 -3.51869; dur: 2000; easing: easeInOutCubic; startEvents: animationcomplete__open; delay: 4000;">
+                 </a-box>
+
+            <a-entity gltf-model="#railgun" position="5.99314 1.73502 -9.05768" scale="0.40315 0.40315 0.40315" rotation="0 -46.808932988802866 0"></a-entity>
+
+            <a-entity environment="preset: starry"; position="0 -0.03886 0"; fog: 0.2; lighting: distant; shadow: true; dressingAmount: 20"></a-entity>
+            <a-entity 
+                position="0 0 0" 
+                id="cameraRig" 
+                movement-controls="speed: 1.01; enabled:false"
+                a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
+                <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
+                    <a-cursor color="white"></a-cursor>
+                </a-entity>
+            </a-entity>
+
+            <a-plane navmesh="" position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4" scale="4 4 1" physx-body="type: static"></a-plane>
+            <a-sky color="#ECECEC"></a-sky>
+                </a-scene>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const scene = document.querySelector('a-scene');
+                        const assets = document.querySelector('a-assets');
+                        function startPhysics() {
+                            if (scene && scene.systems && scene.systems.physx) {
+                                scene.systems.physx.startPhysX();
+                            }
+                        };
+                        if (assets && !assets.hasLoaded) {
+                            assets.addEventListener('loaded', startPhysics, { once: true });
+                        } else {
+                            startPhysics();
+                        }
+                    });
+                </script>
+    </body>
 </html>
