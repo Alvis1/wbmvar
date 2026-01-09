@@ -1,0 +1,129 @@
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+    <!--Event-Set Component-->
+    <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
+
+    <script src="a-cursor-navigation.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+  </head>
+  <body>
+    <!-- assets -->
+    <a-assets>
+      <a-asset-item src="./Models/wall.glb" id="wall"></a-asset-item>
+      <a-asset-item
+        src="./Models/building_wall.glb"
+        id="building-wall"
+      ></a-asset-item>
+      <a-asset-item src="./Models/thriller01.glb" id="Hip"></a-asset-item>
+    </a-assets>
+
+    <a-scene>
+      <!-- dodecahedron -->
+      <a-entity
+        id="dodecahedron"
+        geometry="primitive: dodecahedron; radius: 2"
+        position="-4 0 -7"
+        event-set__enter="_event: mouseenter; color: red"
+        event-set__leave="_event: mouseleave; color: #4CC3D9"
+        animation="property:rotation; to:0 360 0; dur: 6000; easing:linear; loop:true"
+        material="color: #3650d3"
+      ></a-entity>
+
+      <!-- ring -->
+      <a-entity
+        id="ring"
+        position="7 01 -26"
+        geometry="primitive: ring; radiusInner: 0.5; radiusOuter: 1"
+        material="side: double; color: red"
+      ></a-entity>
+
+      <!-- the first wall -->
+      <a-entity
+        gltf-model="./Models/wall.glb"
+        id="wall-entity"
+        position="0 -2 -3"
+        scale="1.09629 1.39257 -0.53237"
+        event-set__enter="_event: mouseenter; color: red"
+        event-set__leave="_event: mouseleave; color: #4CC3D9"
+        animation__click="property: position; from: 0 2 -5; to: 1.5 1.5 1.5; dur: 100; dir: alternate; loop: false; easing: easeInOutCirc; startEvents: click; "
+      >
+        <a-light
+          id="light-entity"
+          light="color: #e4e8a6; intensity: 4"
+          position="4 5.26203 -17.73283"
+        ></a-light>
+      </a-entity>
+
+      <!-- building_wall -->
+      <a-entity
+        id="building_wall-entity"
+        geometry="depth: 2.27; height: 4.22; width: 30"
+        position="0 2 -16.63622"
+        event-set__enter="_event: mouseenter; color: red"
+        event-set__leave="_event: mouseleave; color: #4CC3D9"
+        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 23 2 -15; loop: false; property: position; startEvents: click; to: 1.5 1.5 1.5"
+        material="opacity: 0; transparent: true; fog: false"
+      >
+        <a-entity
+          gltf-model="./Models/building_wall.glb"
+          rotation="0 82.71218730508564 0"
+          color="red"
+          position="19.88503 0 1.77842"
+        ></a-entity>
+      </a-entity>
+
+      <!-- hip -->
+      <a-entity
+        animation-mixer
+        gltf-model="#Hip"
+        id="hip-entity"
+        position="0 0 -3"
+      ></a-entity>
+
+      <!-- sky -->
+      <a-sky color="red" material="color: #9edde6">
+        <a-light
+          id="light-entity"
+          light="color: #B0E0E6; intensity: 4"
+          position="4 10 -3"
+        ></a-light>
+      </a-sky>
+
+      <!-- camera -->
+      <a-entity
+        position="0 0 0"
+        id="cameraRig"
+        movement-controls="speed: 1.01; enabled:false"
+        a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head"
+      >
+        <a-entity
+          id="head"
+          position="0 1.6 0"
+          camera="near: 0.1"
+          look-controls="reverseMouseDrag: false"
+        >
+          <a-cursor color="white"></a-cursor>
+        </a-entity>
+        <a-entity
+          id="leftHand"
+          hand-tracking-grab-controls="hand: left;"
+        ></a-entity>
+        <a-entity
+          id="rightHand"
+          hand-tracking-grab-controls="hand: right;"
+        ></a-entity>
+
+        <a-plane
+          navmesh
+          position="0 0 -4"
+          rotation="-90 0 0"
+          width="50"
+          height="50"
+          color="#B0E0E6"
+        ></a-plane>
+      </a-entity>
+    </a-scene>
+  </body>
+</html>
