@@ -16,11 +16,11 @@
 
   </head>
   <body>
-    <a-scene obb-collider="showColliders: false" physics="debug: true">
+    <a-scene obb-collider="showColliders: false">
       <a-box 
         id="door" color="pink" position="0.2 3.5 -9.4" scale="15 7 1" 
-        animation_open="property: position; to: 0.2 -4 -9.4; dur: 800;  easing: easeInOutQuad; startEvents: openDoor"
-      ></a-box>
+        animation__click="property: position; to: 0.2 -6.5 -9.4; dur: 1000; startEvents: click; easing: easeInOutCirc;">
+      </a-box>
       <a-box id="wall1" color="pink" position="7.7 3.5 -9.4" scale="25 7 1" rotation="0 90 0" ></a-box>
       <a-box id="wall2" color="pink" position="-7.7 3.5 -9.4" scale="25 7 1" rotation="0 90 0" ></a-box>
       <a-box id="wall3" color="pink" position="0.2 3.5 2.6" scale="15 7 1" ></a-box>
@@ -31,8 +31,16 @@
 
       <!--Grabbing-->
       <a-box 
-        id="green_cube" grabbable=" hoverEnabled: true; hoverColor: #red;"
+        id="small_green_cube" grabbable=" hoverEnabled: true; hoverColor: #red;"
         position="2 1.5 -7" rotation="0 45 45" scale="0.2 0.2 0.2" color="green">
+      </a-box>
+
+      <a-box 
+        id="big_green_cube" 
+        position="2 1.5 -15" rotation="0 45 45" scale="1 1 1" color="black"
+        event-set__enter="_event: mouseenter; color: green"
+        event-set__leave="_event: mouseleave; color: black"
+        animation__click="property: scale; from: 1 1 1; to: 1.5 1.5 1.5; dur: 100; dir: alternate; loop: 1; easing: easeInOutCirc; startEvents: click; ">
       </a-box>
         
       <!--Camera with cursor and hand tracking enabled. Pinch gesture as click event-->
