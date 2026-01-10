@@ -1,499 +1,1124 @@
 /**
- * VERSION 1.2
- * A-CURSOR NAVIGATION - A-Frame Teleportation System
+ * A-CURSOR NAVIGATION COMPONENTS
+ * ==============================
+ * A-Frame teleportation system using the a-cursor for consistent navigation
+ * in both desktop and VR modes.
  * 
- * COMPONENTS:
- *   navmesh          - Mark surfaces as teleportable
- *   raycast-exclude  - Prevent objects from blocking teleport rays
- *   a-cursor-teleport - Main teleportation (attach to a-camera)
- *   go-to            - Click to navigate to preset position
+ * COMPONENTS INCLUDED:
+ * --------------------
  * 
- * EXAMPLE (teleport):
- *   <a-camera a-cursor-teleport="cameraHeight: 1.6">
- *     <a-cursor></a-cursor>
- *   </a-camera>
- *   <a-plane navmesh rotation="-90 0 0" width="20" height="20"></a-plane>
- *   <a-box raycast-exclude position="0 1 -3"></a-box>
+ * 1. navmesh
+ *    Marks a surface as teleportable. Add this attribute to any geometry
+ *    where users should be able to teleport.
  * 
- * EXAMPLE (go-to):
- *   <a-sphere go-to="position: 5 0 -10; rotation: 0 90 0" 
- *             position="5 1 -10" radius="0.3" color="yellow"></a-sphere>
+ *    Example:
+ *    <a-plane navmesh position="0 0 0" rotation="-90 0 0" width="10" height="10"></a-plane>
+ *    <a-entity navmesh gltf-model="#floor-model"></a-entity>
  * 
- * OPTIONS (a-cursor-teleport):
- *   cameraHeight    - Height above navmesh (default: 1.6)
- *   landingMaxAngle - Max surface angle in degrees (default: 45)
- *   transitionSpeed - Teleport speed (default: 0.0006)
- *   cursorColor     - Indicator color (default: #00ff00)
- *   cursorOpacity   - Indicator opacity (default: 0.8)
- *   dragThreshold   - Pixels to distinguish drag from click (default: 8)
  * 
- * OPTIONS (go-to):
- *   position - Target position x y z
- *   rotation - Target rotation x y z in degrees (default: 0 0 0)
- *   duration - Animation duration in ms (default: 2000)
- *   easing   - Animation easing (default: easeInOutQuad)
+ * 2. raycast-exclude  
+ *    Excludes an object from blocking teleportation. Objects with this
+ *    attribute won't prevent teleporting to navmesh surfaces behind them.
  * 
- * DEBUG: Add ?debug=true to URL for console logging
+ *    Example:
+ *    <a-box raycast-exclude position="0 1 -3" material="opacity: 0.5"></a-box>
+ * 
+ * 
+ * 3. a-cursor-teleport
+ *    Main teleportation component. Attach to the camera rig entity.
+ * 
+ *    Schema Properties:
+ *    - cameraRig: Selector for the camera rig entity (default: "")
+ *    - cameraHead: Selector for the camera/head entity (default: "")  
+ *    - landingMaxAngle: Max surface angle in degrees for valid landing (default: 45)
+ *    - landingNormal: Expected up direction (default: {x:0, y:1, z:0})
+ *    - transitionSpeed: Teleport animation speed (default: 0.0006)
+ *    - cursorColor: Teleport indicator color (default: "#00ff00")
+ *    - cursorOpacity: Teleport indicator opacity (default: 1)
+ *    - alignToSurface: Align camera to surface normal (default: true)
+ *    - rotationSmoothing: Rotation interpolation factor (default: 1.0)
+ * 
+ *    Basic Example:
+ *    <a-entity id="cameraRig" a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
+ *      <a-entity id="head" camera look-controls>
+ *        <a-cursor></a-cursor>
+ *      </a-entity>
+ *    </a-entity>
+ *    <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="10" height="10"></a-plane>
+ * 
+ *    Full Example with all options:
+ *    <a-entity 
+ *      id="cameraRig"
+ *      a-cursor-teleport="
+ *        cameraRig: #cameraRig; 
+ *        cameraHead: #head;
+ *        cursorColor: #00ff00;
+ *        cursorOpacity: 0.8;
+ *        landingMaxAngle: 30;
+ *        transitionSpeed: 0.001">
+ *      <a-entity id="head" position="0 1.6 0" camera look-controls>
+ *        <a-cursor color="white"></a-cursor>
+ *      </a-entity>
+ *    </a-entity>
+ * 
+ * 
+ * HOW IT WORKS:
+ * -------------
+ * - The a-cursor casts a ray from the center of the screen
+ * - When hovering over a navmesh surface, a green ring indicator appears
+ * - Clicking teleports the camera rig to that location
+ * - Objects without raycast-exclude will block teleportation (occlusion)
+ * - Works consistently in both desktop browser and VR headset modes
+ * 
+ * 
+ * DEBUG MODE:
+ * -----------
+ * Add ?debug=true to URL to enable console logging for troubleshooting.
+ * 
  */
 
-// Debug helper
-const createLogger = (prefix, enabled) => (...args) => enabled && console.log(prefix, ...args);
-
-// ============================================================================
-// NAVMESH COMPONENT
-// Marks surfaces as valid teleport destinations
-// ============================================================================
+// Simple navmesh component - just marks an entity as a navigation mesh for teleportation
 AFRAME.registerComponent("navmesh", {
     init() {
-        this.markMeshes = () => {
-            this.el.object3D.traverse(obj => {
-                if (obj.isMesh) {
-                    obj.userData.isNavmesh = true;
-                    obj.userData.collision = true;
-                }
-            });
-        };
+        this.markMeshes = this.markMeshes.bind(this);
         this.markMeshes();
+        
+        // Handle GLTF models that load after component init
         this.el.addEventListener('model-loaded', this.markMeshes);
     },
-
+    
+    markMeshes() {
+        this.el.object3D.traverse((obj) => {
+            if (obj.isMesh) {
+                obj.userData.collision = true;
+                obj.userData.isNavmesh = true;
+            }
+        });
+    },
+    
     remove() {
         this.el.removeEventListener('model-loaded', this.markMeshes);
     }
 });
 
-// ============================================================================
-// RAYCAST-EXCLUDE COMPONENT
-// Prevents objects from blocking teleportation rays
-// ============================================================================
+// Exclude entity from raycast occlusion checking - objects with this won't block teleportation
 AFRAME.registerComponent("raycast-exclude", {
     init() {
-        this.markExcluded = () => {
-            this.el.object3D.traverse(obj => {
-                if (obj.isMesh) obj.userData.raycastExclude = true;
-            });
-        };
+        this.markExcluded = this.markExcluded.bind(this);
         this.markExcluded();
+        
+        // Handle GLTF models that load after component init
         this.el.addEventListener('model-loaded', this.markExcluded);
     },
-
+    
+    markExcluded() {
+        this.el.object3D.traverse((obj) => {
+            if (obj.isMesh) {
+                obj.userData.raycastExclude = true;
+            }
+        });
+    },
+    
     remove() {
         this.el.removeEventListener('model-loaded', this.markExcluded);
     }
 });
 
-// ============================================================================
-// A-CURSOR-TELEPORT COMPONENT
-// Main teleportation system using a-cursor
-// Attach directly to <a-camera> - no rig setup needed
-// ============================================================================
+// Enhanced cursor-teleport component that shows cursor when hovering over valid teleport locations
 AFRAME.registerComponent("a-cursor-teleport", {
     schema: {
-        cameraHeight: { type: "number", default: 1.6 },
-        landingMaxAngle: { type: "number", default: 45 },
+        cameraHead: { type: "selector", default: "" },
+        cameraRig: { type: "selector", default: "" },
+        collisionEntities: { type: "string", default: "[navmesh]" },
+        ignoreEntities: { type: "string", default: "" },
+        landingMaxAngle: { default: 45, min: 0, max: 360 },
+        landingNormal: { type: "vec3", default: { x: 0, y: 1, z: 0 } },
         transitionSpeed: { type: "number", default: 0.0006 },
         cursorColor: { type: "color", default: "#00ff00" },
-        cursorOpacity: { type: "number", default: 0.8 },
-        dragThreshold: { type: "number", default: 8 }
+        cursorOpacity: { type: "number", default: 1 },
+        alignToSurface: { type: "boolean", default: true },
+        rotationSmoothing: { type: "number", default: 1.0 },
+        dragThreshold: { type: "number", default: 8 }, // Pixels of movement to count as drag
+        indicatorSmoothing: { type: "number", default: 0.15 } // Position lerp factor (0-1, lower = smoother)
     },
 
     init() {
-        this.debug = location.search.includes('debug=true');
-        this.log = createLogger('[teleport]', this.debug);
-        this.log('Initializing');
-
+        // Performance: Only log in debug mode
+        this.debugMode = window.location.search.includes('debug=true');
+        if (this.debugMode) console.log("navigation-05: Initializing cursor-teleport component");
+        
+        this.mobile = AFRAME.utils.device.isMobile() || AFRAME.utils.device.isMobileDeviceRequestingDesktopSite();
         this.isVR = false;
-        this.transitioning = false;
-        this.transitionProgress = 0;
+        const sceneEl = this.el.sceneEl;
+        this.canvas = sceneEl.renderer.domElement;
+        
+        // Check for VR mode once during initialization
+        this.checkVRMode();
+        
+        // Listen for VR session changes
+        this.setupVRSessionListeners();
+        
+        // Cache camera reference
+        this.initializeCamera();
+        
+        // Initialize reusable objects to prevent garbage collection
+        this.initializeReusableObjects();
+        
+        // Performance optimization: Cache teleport position results
+        this.lastTeleportCheck = 0;
+        this.cachedTeleportPos = null;
+        this.teleportCheckInterval = 16; // ~60fps
+
+        // Performance monitoring (only in debug mode)
+        if (this.debugMode) {
+            this.perfStats = {
+                raycastCount: 0,
+                lastPerfReport: 0,
+                avgFrameTime: 0
+            };
+        }
+
+        // Create teleport indicator once
+        this.createTeleportIndicator();
+
+        // Initialize VR properties
+        this.vrCursorInitialized = false;
+        this.vrCursorClickHandler = null;
+        this.vrTransitionReady = false;
+
+        // Mouse tracking (reused objects)
+        this.mousePosition = { x: 0, y: 0 };
+        this.mouseOriginalPosition = { x: 0, y: 0 };
+        
+        // Drag detection for desktop - prevents teleport during camera rotation
         this.isDragging = false;
+        this.isMouseDown = false;
+        this.dragDistance = 0;
 
-        // Find camera rig - A-Frame wraps a-camera in a rig automatically
-        this.cameraEl = this.el.components.camera ? this.el : this.el.querySelector('[camera]');
-        this.rigEl = this.cameraEl?.parentEl?.classList?.contains('a-entity') 
-            ? this.cameraEl.parentEl 
-            : this.cameraEl;
-        
-        // Fallback: if we're on the rig itself, find the camera
-        if (!this.cameraEl && this.el.querySelector('[camera]')) {
-            this.cameraEl = this.el.querySelector('[camera]');
-            this.rigEl = this.el;
-        }
+        // Bind methods once
+        this.bindMethods();
 
-        this.log('Camera:', !!this.cameraEl, 'Rig:', !!this.rigEl);
+        // Initialize raycast objects
+        this.updateRaycastObjects();
 
-        // Reusable THREE.js objects (prevents garbage collection)
-        this.startPos = new THREE.Vector3();
-        this.endPos = new THREE.Vector3();
-        this.upVector = new THREE.Vector3(0, 1, 0);
-        this.tempMatrix = new THREE.Matrix3();
-        this.tempVec = new THREE.Vector3();
-
-        this.createIndicator();
-        this.setupVRListeners();
-        
-        // Defer cursor setup until scene is ready
-        if (this.el.sceneEl.hasLoaded) {
-            this.setupCursor();
-            this.setupDragDetection();
-        } else {
-            this.el.sceneEl.addEventListener('loaded', () => {
-                this.setupCursor();
-                this.setupDragDetection();
-            }, { once: true });
-        }
+        // Set up cursor (works for both VR and desktop)
+        this.setupCursor();
     },
 
-    createIndicator() {
-        const geometry = new THREE.RingGeometry(0.25, 0.3, 32);
-        geometry.rotateX(-Math.PI / 2);
-        geometry.translate(0, 0.02, 0);
+    initializeCamera() {
+        // Find camera once and cache it
+        if (!this.data.cameraHead || !this.data.cameraHead.object3D) {
+            console.warn("a-cursor-teleport: cameraHead selector not found or not ready");
+            return;
+        }
+        
+        this.cam = null;
+        this.data.cameraHead.object3D.traverse((obj) => {
+            if (!this.cam && obj instanceof THREE.Camera) {
+                this.cam = obj;
+                if (this.debugMode) console.log("navigation-05: Camera found");
+            }
+        });
+        
+        if (!this.data.cameraRig || !this.data.cameraRig.object3D) {
+            console.warn("a-cursor-teleport: cameraRig selector not found or not ready");
+            return;
+        }
+        this.camRig = this.data.cameraRig.object3D;
+    },
 
-        this.indicator = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+    initializeReusableObjects() {
+        // Pre-allocate all reusable objects to prevent garbage collection
+        this.rayCaster = new THREE.Raycaster();
+        this.collisionObjectNormalMatrix = new THREE.Matrix3();
+        this.collisionWorldNormal = new THREE.Vector3();
+        this.referenceNormal = new THREE.Vector3();
+        this.rayCastObjects = [];
+        this.referenceNormal.copy(this.data.landingNormal);
+
+        // Transition properties (reusable objects)
+        this.transitioning = false;
+        this.transitionProgress = 0;
+        this.transitionCamPosStart = new THREE.Vector3();
+        this.transitionCamPosEnd = new THREE.Vector3();
+        this.transitionRotStart = new THREE.Quaternion();
+        this.transitionRotEnd = new THREE.Quaternion();
+        this.currentSurfaceNormal = new THREE.Vector3(0, 1, 0);
+        this.targetSurfaceNormal = new THREE.Vector3(0, 1, 0);
+
+        // Pre-allocate temporary objects for calculations
+        this.tempVector3 = new THREE.Vector3();
+        this.tempVector3_2 = new THREE.Vector3();
+        this.tempQuaternion = new THREE.Quaternion();
+        this.teleportQuaternion = new THREE.Quaternion();
+        this.upVector = new THREE.Vector3(0, 1, 0);
+        this.ndcMouse = new THREE.Vector2();
+        
+        // Indicator smoothing - target position for lerping
+        this.indicatorTargetPosition = new THREE.Vector3();
+        this.indicatorTargetQuaternion = new THREE.Quaternion();
+
+        // Initialize counters
+        this.lastCollisionCount = 0;
+        this.lastRaycastCount = 0;
+    },
+
+    createTeleportIndicator() {
+        const ringGeometry = new THREE.RingGeometry(0.25, 0.3, 32, 1);
+        ringGeometry.rotateX(-Math.PI / 2);
+        ringGeometry.translate(0, 0.02, 0);
+        
+        const ringMaterial = new THREE.MeshBasicMaterial({
             color: this.data.cursorColor,
             transparent: true,
             opacity: this.data.cursorOpacity
-        }));
-        this.indicator.visible = false;
-        this.el.sceneEl.object3D.add(this.indicator);
-        this.log('Indicator created');
+        });
+        
+        this.teleportIndicator = new THREE.Mesh(ringGeometry, ringMaterial);
+        this.teleportIndicator.visible = false;
+        this.el.sceneEl.object3D.add(this.teleportIndicator);
+        
+        if (this.debugMode) console.log("navigation-05: Teleport indicator created");
+    },
+
+    bindMethods() {
+        // Bind all methods once to prevent repeated binding
+        this.updateRaycastObjects = this.updateRaycastObjects.bind(this);
+        this.getMouseState = this.getMouseState.bind(this);
+        this.getTeleportPosition = this.getTeleportPosition.bind(this);
+        this.getTeleportPositionVR = this.getTeleportPositionVR.bind(this);
+        this.isValidNormalsAngle = this.isValidNormalsAngle.bind(this);
+        this.transition = this.transition.bind(this);
+        this.triggerTunnelAnimation = this.triggerTunnelAnimation.bind(this);
+        this.triggerTunnelUpAnimation = this.triggerTunnelUpAnimation.bind(this);
+        this.mouseMove = this.mouseMove.bind(this);
+        this.mouseDown = this.mouseDown.bind(this);
+        this.mouseUp = this.mouseUp.bind(this);
+        this.easeInOutQuad = this.easeInOutQuad.bind(this);
+        this.hideCursor = this.hideCursor.bind(this);
+        this.checkVRMode = this.checkVRMode.bind(this);
+        this.setupVRSessionListeners = this.setupVRSessionListeners.bind(this);
+        
+        // Desktop drag detection handlers
+        this.onMouseDown = this.onMouseDown.bind(this);
+        this.onMouseMove = this.onMouseMove.bind(this);
+        this.onMouseUp = this.onMouseUp.bind(this);
+    },
+
+    checkVRMode() {
+        // Optimized VR mode detection
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlVRMode = urlParams.get('vr') === 'true';
+        
+        let sessionVRMode = false;
+        if (this.el.sceneEl.xr && this.el.sceneEl.xr.isPresenting) {
+            sessionVRMode = true;
+        }
+        
+        const previousVRMode = this.isVR;
+        this.isVR = urlVRMode || sessionVRMode;
+        
+        // Only log when VR mode actually changes
+        if (this.debugMode && previousVRMode !== this.isVR) {
+            console.log("navigation-05: VR Mode changed - Final:", this.isVR);
+        }
+    },
+
+    setupVRSessionListeners() {
+        // Optimized VR session listeners with immediate response
+        this.el.sceneEl.addEventListener('enter-vr', () => {
+            if (this.debugMode) console.log("navigation-05: Entered VR session");
+            this.isVR = true;
+            this.transitioning = false;
+            this.transitionProgress = 0;
+            
+            // Immediate initialization without timeouts
+            this.initializeTunnelForVR();
+            this.setupVRCursor();
+            this.vrTransitionReady = true;
+        });
+        
+        this.el.sceneEl.addEventListener('exit-vr', () => {
+            if (this.debugMode) console.log("navigation-05: Exited VR session");
+            this.isVR = false;
+        });
+
+        // Optimized visibility change handler
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && this.isVR && (!this.vrCursor || !this.vrRaycaster)) {
+                if (this.debugMode) console.log("navigation-05: Re-initializing VR cursor on tab focus");
+                this.setupVRCursor();
+            }
+        });
+    },
+
+    initializeTunnelForVR() {
+        // Cache tunnel element for better performance
+        if (!this.tunnelElement) {
+            this.tunnelElement = this.el.sceneEl.querySelector("#tunnel");
+        }
+        
+        if (this.tunnelElement) {
+            // Immediate tunnel state reset
+            this.tunnelElement.removeAttribute("animation__tunnel_down");
+            this.tunnelElement.removeAttribute("animation__tunnel_up");
+            this.tunnelElement.removeAttribute("animation__down");
+            this.tunnelElement.removeAttribute("animation__up");
+            this.tunnelElement.setAttribute("scale", "1 0.1 1");
+            this.tunnelElement.setAttribute("visible", "true");
+            
+            if (this.debugMode) console.log("navigation-05: Tunnel initialized for VR");
+        }
+        
+        this.vrTransitionReady = true;
     },
 
     setupCursor() {
+        // Unified cursor setup - works for both VR and desktop
         this.cursorEl = this.el.sceneEl.querySelector('a-cursor');
         
-        if (!this.cursorEl?.components?.raycaster?.raycaster) {
-            this.log('Cursor not ready, retrying...');
-            setTimeout(() => this.setupCursor(), 200);
-            return;
+        if (this.cursorEl && this.cursorEl.components.raycaster && this.cursorEl.components.raycaster.raycaster) {
+            this.cursorRaycaster = this.cursorEl.components.raycaster;
+            
+            // Remove existing listener to prevent duplicates
+            if (this.cursorClickHandler) {
+                this.cursorEl.removeEventListener('click', this.cursorClickHandler);
+            }
+            
+            // Create unified click handler for both VR and desktop
+            this.cursorClickHandler = (event) => {
+                // On desktop (non-VR, non-mobile), check if this was a drag operation
+                if (!this.isVR && !this.mobile) {
+                    if (this.isDragging) {
+                        if (this.debugMode) console.log("navigation-05: Click ignored - was a drag operation (distance:", this.dragDistance.toFixed(1), "px)");
+                        return; // Don't teleport if user was dragging to rotate camera
+                    }
+                }
+                
+                if (this.debugMode) console.log("navigation-05: Cursor click (VR:", this.isVR, ")");
+                
+                const teleportData = this.getTeleportPositionFromCursor();
+                if (teleportData) {
+                    this.teleportIndicator.position.copy(teleportData.point);
+                    
+                    let targetQuaternion = null;
+                    if (this.data.alignToSurface && teleportData.normal) {
+                        this.teleportQuaternion.setFromUnitVectors(this.upVector, teleportData.normal);
+                        targetQuaternion = this.teleportQuaternion.clone();
+                    }
+                    
+                    this.transition(teleportData, targetQuaternion);
+                }
+            };
+            
+            this.cursorEl.addEventListener('click', this.cursorClickHandler);
+            this.cursorInitialized = true;
+            
+            if (this.debugMode) console.log("navigation-05: Cursor setup completed");
+        } else {
+            // Single retry with short delay
+            if (!this.cursorSetupRetried) {
+                this.cursorSetupRetried = true;
+                setTimeout(() => this.setupCursor(), 200);
+            } else if (this.debugMode) {
+                console.warn("navigation-05: Cursor setup failed after retry");
+            }
         }
-
-        this.cursorRaycaster = this.cursorEl.components.raycaster;
-
-        this.handleClick = () => {
-            if (this.isDragging && !this.isVR) {
-                this.log('Click ignored - was drag');
-                return;
-            }
-
-            const hit = this.getValidHit();
-            if (hit) {
-                this.log('Teleporting to', hit.point);
-                this.teleportTo(hit.point);
-            }
-        };
-
-        this.cursorEl.addEventListener('click', this.handleClick);
-        this.log('Cursor setup complete');
     },
 
-    setupVRListeners() {
-        const scene = this.el.sceneEl;
+    // Keep old method name as alias for backwards compatibility
+    setupVRCursor() {
+        this.setupCursor();
+    },
+
+    updateRaycastObjects() {
+        const previousCount = this.rayCastObjects.length;
+        this.rayCastObjects.length = 0;
         
-        scene.addEventListener('enter-vr', () => {
-            this.isVR = true;
-            this.log('Entered VR');
-            this.initTunnel();
+        // Collect ALL scene meshes for occlusion checking (excluding marked objects)
+        this.allSceneMeshes = [];
+        this.el.sceneEl.object3D.traverse((obj) => {
+            if (obj.isMesh && obj.visible && !obj.userData.raycastExclude) {
+                this.allSceneMeshes.push(obj);
+            }
         });
+        
+        if (this.data.collisionEntities !== "") {
+            const collisionEntities = this.el.sceneEl.querySelectorAll(this.data.collisionEntities);
+            
+            // Only log changes for debugging
+            if (this.debugMode && collisionEntities.length !== this.lastCollisionCount) {
+                console.log("navigation-05: Collision entities count:", collisionEntities.length);
+            }
+            this.lastCollisionCount = collisionEntities.length;
+            
+            // Optimized loop with early continue
+            for (let i = 0; i < collisionEntities.length; i++) {
+                const entity = collisionEntities[i];
+                entity.object3D.traverse((obj) => {
+                    if (obj.isMesh) {
+                        obj.userData.collision = true;
+                        obj.userData.isNavmesh = true;
+                        this.rayCastObjects.push(obj);
+                    }
+                });
+            }
+        } else {
+            // Create default plane only once
+            if (!this.collisionMesh) {
+                const planeGeometry = new THREE.PlaneGeometry(100, 100, 1);
+                planeGeometry.rotateX(-Math.PI / 2);
+                const planeMaterial = new THREE.MeshNormalMaterial();
+                this.collisionMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+                this.collisionMesh.userData.collision = true;
+                if (this.debugMode) console.log("navigation-05: Created default collision plane");
+            }
+            this.rayCastObjects.push(this.collisionMesh);
+        }
+        
+        // Critical warning only when objects are lost
+        if (this.rayCastObjects.length === 0 && previousCount > 0) {
+            console.warn("navigation-05: CRITICAL - Lost all collision objects! VR teleportation disabled.");
+        }
+        
+        this.lastRaycastCount = this.rayCastObjects.length;
 
-        scene.addEventListener('exit-vr', () => {
-            this.isVR = false;
-            this.log('Exited VR');
-        });
-    },
-
-    setupDragDetection() {
-        const canvas = this.el.sceneEl.canvas;
-        if (!canvas) return;
-
-        let startX, startY;
-
-        this.onMouseDown = (e) => {
-            startX = e.clientX;
-            startY = e.clientY;
-            this.isDragging = false;
-        };
-
-        this.onMouseMove = (e) => {
-            if (startX === undefined) return;
-            const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-            if (dist > this.data.dragThreshold) this.isDragging = true;
-        };
-
-        this.onMouseUp = () => {
-            setTimeout(() => this.isDragging = false, 0);
-            startX = startY = undefined;
-        };
-
-        canvas.addEventListener('mousedown', this.onMouseDown);
-        canvas.addEventListener('mousemove', this.onMouseMove);
-        canvas.addEventListener('mouseup', this.onMouseUp);
-    },
-
-    initTunnel() {
-        this.tunnelEl = this.tunnelEl || this.el.sceneEl.querySelector('#tunnel');
-        if (this.tunnelEl) {
-            this.tunnelEl.removeAttribute('animation__tunnel_down');
-            this.tunnelEl.removeAttribute('animation__tunnel_up');
-            this.tunnelEl.setAttribute('scale', '1 0.1 1');
-            this.tunnelEl.setAttribute('visible', 'true');
+        // Handle ignore entities
+        if (this.data.ignoreEntities !== "") {
+            const ignoreEntities = this.el.sceneEl.querySelectorAll(this.data.ignoreEntities);
+            for (let i = 0; i < ignoreEntities.length; i++) {
+                const entity = ignoreEntities[i];
+                entity.object3D.traverse((obj) => {
+                    if (obj.isMesh) {
+                        this.rayCastObjects.push(obj);
+                    }
+                });
+            }
         }
     },
 
-    getValidHit() {
-        const raycaster = this.cursorRaycaster?.raycaster;
-        if (!raycaster) return null;
-
-        // Collect all visible meshes except excluded ones
-        const meshes = [];
-        this.el.sceneEl.object3D.traverse(obj => {
-            if (obj.isMesh && obj.visible && !obj.userData.raycastExclude) {
-                meshes.push(obj);
-            }
-        });
-
-        const hits = raycaster.intersectObjects(meshes, true);
-        if (hits.length === 0) return null;
-
-        // First hit must be a navmesh (occlusion check)
-        const hit = hits[0];
-        if (!hit.object.userData.isNavmesh || !hit.face) return null;
-
-        // Check surface angle
-        this.tempMatrix.getNormalMatrix(hit.object.matrixWorld);
-        const worldNormal = this.tempVec
-            .copy(hit.face.normal)
-            .applyMatrix3(this.tempMatrix)
-            .normalize();
-
-        const angle = THREE.MathUtils.radToDeg(this.upVector.angleTo(worldNormal));
-        if (angle > this.data.landingMaxAngle) return null;
-
-        return { point: hit.point, normal: worldNormal };
+    getMouseState(event) {
+        // Optimized mouse state using cached objects
+        if (!this.canvas) return null;
+        const rect = this.canvas.getBoundingClientRect();
+        if (event.clientX != null) {
+            this.mousePosition.x = event.clientX - rect.left;
+            this.mousePosition.y = event.clientY - rect.top;
+            return this.mousePosition;
+        } else if (event.touches && event.touches[0]) {
+            this.mousePosition.x = event.touches[0].clientX - rect.left;
+            this.mousePosition.y = event.touches[0].clientY - rect.top;
+            return this.mousePosition;
+        }
+        return null;
     },
 
-    teleportTo(point) {
-        if (!this.rigEl) return;
+    getTeleportPositionFromCursor() {
+        // Unified teleport position calculation using a-cursor raycaster
+        if (!this.cursorRaycaster?.raycaster) {
+            // Single attempt to re-establish connection
+            if (this.cursorEl?.components.raycaster?.raycaster) {
+                this.cursorRaycaster = this.cursorEl.components.raycaster;
+            } else {
+                return false;
+            }
+        }
+        
+        if (this.rayCastObjects.length === 0) return false;
+        
+        // First, raycast against ALL scene objects to check for occlusion
+        const allIntersects = this.cursorRaycaster.raycaster.intersectObjects(this.allSceneMeshes || [], true);
+        
+        if (allIntersects.length === 0) return false;
+        
+        // Get the first (closest) intersection
+        const firstHit = allIntersects[0];
+        
+        // Check if the first hit is a navmesh object
+        // If something else is in front of the navmesh, teleportation is blocked
+        if (!firstHit.object.userData.isNavmesh) {
+            return false; // Something is occluding the navmesh
+        }
+        
+        const intersect = firstHit;
+        
+        // Ensure face data exists (some geometries may not have face normals)
+        if (!intersect.face || !this.isValidNormalsAngle(intersect.face.normal, intersect.object) || 
+            intersect.object.userData.collision !== true) {
+            return false;
+        }
 
-        this.startPos.copy(this.rigEl.object3D.position);
-        // Keep camera at constant height above navmesh
-        this.endPos.set(point.x, point.y + this.data.cameraHeight, point.z);
+        // Reuse matrix calculation
+        this.collisionObjectNormalMatrix.getNormalMatrix(intersect.object.matrixWorld);
+        const worldNormal = this.tempVector3.copy(intersect.face.normal)
+            .applyMatrix3(this.collisionObjectNormalMatrix).normalize();
 
+        return {
+            point: intersect.point,
+            normal: worldNormal
+        };
+    },
+
+    // Keep old method name as alias for backwards compatibility
+    getTeleportPositionVR() {
+        return this.getTeleportPositionFromCursor();
+    },
+
+    getTeleportPosition(x, y) {
+        // Optimized teleport position calculation with cached objects
+        if (this.rayCastObjects.length === 0 || !this.cam || !this.canvas) return false;
+
+        const rect = this.canvas.getBoundingClientRect();
+        this.ndcMouse.x = (x / (rect.right - rect.left)) * 2 - 1;
+        this.ndcMouse.y = -(y / (rect.bottom - rect.top)) * 2 + 1;
+
+        this.rayCaster.setFromCamera(this.ndcMouse, this.cam);
+        const intersects = this.rayCaster.intersectObjects(this.rayCastObjects);
+
+        if (intersects.length === 0) return false;
+        
+        const intersect = intersects[0];
+        if (!intersect.face || !this.isValidNormalsAngle(intersect.face.normal, intersect.object) || 
+            intersect.object.userData.collision !== true) return false;
+
+        // Reuse matrix and vector calculations
+        this.collisionObjectNormalMatrix.getNormalMatrix(intersect.object.matrixWorld);
+        const worldNormal = this.tempVector3.copy(intersect.face.normal)
+            .applyMatrix3(this.collisionObjectNormalMatrix).normalize();
+
+        return {
+            point: intersect.point,
+            normal: worldNormal
+        };
+    },
+
+    isValidNormalsAngle(normal, object) {
+        this.collisionObjectNormalMatrix.getNormalMatrix(object.matrixWorld);
+        this.collisionWorldNormal.copy(normal).applyNormalMatrix(this.collisionObjectNormalMatrix);
+        const angle = this.referenceNormal.angleTo(this.collisionWorldNormal);
+        return (THREE.MathUtils.RAD2DEG * angle) <= this.data.landingMaxAngle;
+    },
+
+    transition(positionData, targetQuaternion) {
         this.transitionProgress = 0;
+        
+        // Handle both formats efficiently
+        if (positionData.point) {
+            this.transitionCamPosEnd.copy(positionData.point);
+            this.targetSurfaceNormal.copy(positionData.normal);
+        } else {
+            this.transitionCamPosEnd.copy(positionData);
+            this.targetSurfaceNormal.set(0, 1, 0);
+        }
+        
+        this.transitionCamPosStart.copy(this.camRig.position);
         this.transitioning = true;
-        this.el.emit('navigation-start');
+        this.el.emit("navigation-start");
+        
+        // Handle rotation transition
+        this.transitionRotStart.copy(this.camRig.quaternion);
+        
+        if (targetQuaternion) {
+            this.transitionRotEnd.copy(targetQuaternion);
+        } else if (this.data.alignToSurface && positionData.normal) {
+            this.transitionRotEnd.setFromUnitVectors(this.upVector, this.targetSurfaceNormal);
+        } else {
+            this.transitionRotEnd.copy(this.camRig.quaternion);
+        }
+        
+        // Immediate tunnel animation for VR
+        if (this.isVR && this.tunnelElement) {
+            this.triggerTunnelAnimation();
+        }
+    },
 
-        // VR tunnel animation
-        if (this.isVR && this.tunnelEl) {
-            this.tunnelEl.removeAttribute('animation__tunnel_down');
-            this.tunnelEl.setAttribute('animation__tunnel_down', {
-                property: 'scale.y',
+    triggerTunnelAnimation() {
+        if (this.tunnelElement) {
+            this.tunnelElement.removeAttribute("animation__tunnel_down");
+            this.tunnelElement.removeAttribute("animation__tunnel_up");
+            
+            this.tunnelElement.setAttribute("animation__tunnel_down", {
+                property: "scale.y",
                 to: -1,
                 dur: 250,
-                easing: 'easeInQuad'
+                easing: "easeInQuad"
             });
         }
     },
 
-    easeInOutQuad(t) {
-        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    triggerTunnelUpAnimation() {
+        if (this.tunnelElement) {
+            this.tunnelElement.removeAttribute("animation__tunnel_down");
+            this.tunnelElement.removeAttribute("animation__tunnel_up");
+            
+            this.tunnelElement.setAttribute("animation__tunnel_up", {
+                property: "scale.y", 
+                to: -0.1,
+                dur: 500,
+                easing: "easeOutQuad"
+            });
+        }
     },
 
-    tick(time, delta) {
-        // Update indicator when not transitioning
-        if (!this.transitioning) {
-            const hit = this.getValidHit();
-            const wasHidden = !this.indicator.visible;
-            this.indicator.visible = !!hit;
+    hideCursor() {
+        this.teleportIndicator.visible = false;
+    },
+
+    mouseMove(event) {
+        this.getMouseState(event);
+    },
+
+    mouseDown(event) {
+        this.updateRaycastObjects();
+        const mouseState = this.getMouseState(event);
+        if (mouseState) {
+            this.mouseOriginalPosition.x = mouseState.x;
+            this.mouseOriginalPosition.y = mouseState.y;
+        }
+    },
+
+    mouseUp(event) {
+        // Optimized mouse up with precise click detection
+        if (this.mousePosition.x === this.mouseOriginalPosition.x && 
+            this.mousePosition.y === this.mouseOriginalPosition.y) {
             
-            if (hit) {
-                // Snap to position if indicator just appeared, otherwise lerp smoothly
-                if (wasHidden) {
-                    this.indicator.position.copy(hit.point);
-                } else {
-                    this.indicator.position.lerp(hit.point, 0.3);
+            const teleportData = this.getTeleportPosition(this.mousePosition.x, this.mousePosition.y);
+            if (teleportData) {
+                this.teleportIndicator.position.copy(teleportData.point);
+                
+                let targetQuaternion = null;
+                if (this.data.alignToSurface && teleportData.normal) {
+                    this.teleportQuaternion.setFromUnitVectors(this.upVector, teleportData.normal);
+                    targetQuaternion = this.teleportQuaternion.clone();
                 }
+                
+                this.transition(teleportData, targetQuaternion);
+            }
+        }
+    },
+
+    // Desktop drag detection methods - distinguish click from camera rotation drag
+    onMouseDown(event) {
+        this.isMouseDown = true;
+        this.isDragging = false;
+        this.dragDistance = 0;
+        this.mouseOriginalPosition.x = event.clientX;
+        this.mouseOriginalPosition.y = event.clientY;
+    },
+
+    onMouseMove(event) {
+        if (!this.isMouseDown) return;
+        
+        // Calculate distance moved since mousedown
+        const dx = event.clientX - this.mouseOriginalPosition.x;
+        const dy = event.clientY - this.mouseOriginalPosition.y;
+        this.dragDistance = Math.sqrt(dx * dx + dy * dy);
+        
+        // If moved beyond threshold, mark as dragging
+        if (this.dragDistance > this.data.dragThreshold) {
+            this.isDragging = true;
+        }
+    },
+
+    onMouseUp(event) {
+        // Keep isDragging state until after the click event fires
+        // Reset after a microtask to ensure click handler sees the drag state
+        setTimeout(() => {
+            this.isMouseDown = false;
+            this.isDragging = false;
+            this.dragDistance = 0;
+        }, 0);
+    },
+
+    easeInOutQuad(t) {
+        return t < 0.5 ? 2 * t * t : (4 - 2 * t) * t - 1;
+    },
+
+    play() {
+        // Setup cursor for all modes (VR and desktop)
+        this.setupCursor();
+        window.addEventListener("keydown", this.hideCursor, false);
+        
+        // Desktop drag detection - track mouse movement to distinguish click from drag
+        if (!this.mobile) {
+            this.canvas.addEventListener('mousedown', this.onMouseDown, false);
+            this.canvas.addEventListener('mousemove', this.onMouseMove, false);
+            this.canvas.addEventListener('mouseup', this.onMouseUp, false);
+        }
+        
+        if (this.isVR) {
+            this.initializeTunnelForVR();
+        }
+    },
+
+    pause() {
+        this.transitioning = false;
+        this.hideCursor();
+        window.removeEventListener("keydown", this.hideCursor);
+        
+        // Clean up desktop drag detection listeners
+        if (!this.mobile && this.canvas) {
+            this.canvas.removeEventListener('mousedown', this.onMouseDown);
+            this.canvas.removeEventListener('mousemove', this.onMouseMove);
+            this.canvas.removeEventListener('mouseup', this.onMouseUp);
+        }
+    },
+
+    tick(time, deltaTime) {
+        // Performance monitoring (debug only)
+        if (this.debugMode && this.perfStats) {
+            this.perfStats.avgFrameTime = (this.perfStats.avgFrameTime * 0.9) + (deltaTime * 0.1);
+            if (time - this.perfStats.lastPerfReport > 10000) {
+                console.log("navigation-05 Performance:", {
+                    avgFrameTime: this.perfStats.avgFrameTime.toFixed(2) + "ms",
+                    raycastCount: this.perfStats.raycastCount,
+                    raycastObjects: this.rayCastObjects.length
+                });
+                this.perfStats.raycastCount = 0;
+                this.perfStats.lastPerfReport = time;
             }
         }
 
-        // Animate transition
+        // Optimized raycast object updates (less frequent)
+        if (!this.lastRaycastUpdate || time - this.lastRaycastUpdate > 15000) {
+            const previousCount = this.rayCastObjects.length;
+            this.updateRaycastObjects();
+            if (this.debugMode && this.rayCastObjects.length !== previousCount) {
+                console.log("navigation-05: Raycast objects updated - count:", this.rayCastObjects.length);
+            }
+            this.lastRaycastUpdate = time;
+        }
+        
+        // Optimized cursor display with throttled checks
+        if (!this.transitioning) {
+            let teleportPos = false;
+            
+            if (time - this.lastTeleportCheck > this.teleportCheckInterval) {
+                // Always use cursor raycaster for consistent behavior
+                teleportPos = this.getTeleportPositionFromCursor();
+                if (this.debugMode && this.perfStats) this.perfStats.raycastCount++;
+                
+                this.cachedTeleportPos = teleportPos;
+                this.lastTeleportCheck = time;
+            } else {
+                teleportPos = this.cachedTeleportPos;
+            }
+            
+            if (teleportPos) {
+                const wasHidden = !this.teleportIndicator.visible;
+                this.teleportIndicator.visible = true;
+                const position = teleportPos.point || teleportPos;
+                
+                // Calculate target position (with surface offset if needed)
+                if (this.data.alignToSurface && teleportPos.normal) {
+                    this.indicatorTargetPosition.copy(position)
+                        .add(this.tempVector3.copy(teleportPos.normal).multiplyScalar(0.01));
+                    
+                    this.teleportQuaternion.setFromUnitVectors(this.upVector, teleportPos.normal);
+                    this.indicatorTargetQuaternion.copy(this.teleportQuaternion);
+                } else {
+                    this.indicatorTargetPosition.copy(position);
+                    this.indicatorTargetQuaternion.identity();
+                }
+                
+                // If indicator just became visible, snap directly to position (no lerp)
+                // Otherwise smooth lerp to eliminate jitter/vibration
+                if (wasHidden) {
+                    this.teleportIndicator.position.copy(this.indicatorTargetPosition);
+                    this.teleportIndicator.quaternion.copy(this.indicatorTargetQuaternion);
+                } else {
+                    this.teleportIndicator.position.lerp(this.indicatorTargetPosition, this.data.indicatorSmoothing);
+                    this.teleportIndicator.quaternion.slerp(this.indicatorTargetQuaternion, this.data.indicatorSmoothing);
+                }
+            } else {
+                this.teleportIndicator.visible = false;
+            }
+        }
+
+        // Optimized transition animation
         if (this.transitioning) {
-            this.transitionProgress += delta * this.data.transitionSpeed;
-            const t = Math.min(this.transitionProgress, 1);
-            const eased = this.easeInOutQuad(t);
-
-            this.rigEl.object3D.position.lerpVectors(this.startPos, this.endPos, eased);
-
-            if (t >= 1) {
+            this.transitionProgress += deltaTime * this.data.transitionSpeed;
+            const easedProgress = this.easeInOutQuad(this.transitionProgress);
+            const camPos = this.camRig.position;
+            
+            camPos.lerpVectors(this.transitionCamPosStart, this.transitionCamPosEnd, easedProgress);
+            
+            if (this.data.alignToSurface && this.transitionRotStart && this.transitionRotEnd) {
+                const rotationProgress = Math.min(easedProgress * this.data.rotationSmoothing, 1.0);
+                this.camRig.quaternion.slerpQuaternions(this.transitionRotStart, this.transitionRotEnd, rotationProgress);
+            }
+            
+            if (this.transitionProgress >= 1) {
                 this.transitioning = false;
-                this.rigEl.object3D.position.copy(this.endPos);
-                this.el.emit('navigation-end');
-
-                // VR tunnel up animation
-                if (this.isVR && this.tunnelEl) {
-                    this.tunnelEl.removeAttribute('animation__tunnel_up');
-                    this.tunnelEl.setAttribute('animation__tunnel_up', {
-                        property: 'scale.y',
-                        to: -0.1,
-                        dur: 500,
-                        easing: 'easeOutQuad'
-                    });
+                camPos.copy(this.transitionCamPosEnd);
+                
+                if (this.data.alignToSurface && this.transitionRotEnd) {
+                    this.camRig.quaternion.copy(this.transitionRotEnd);
+                }
+                
+                this.el.emit("navigation-end");
+                
+                if (this.isVR && this.tunnelElement) {
+                    this.triggerTunnelUpAnimation();
                 }
             }
         }
     },
 
     update(oldData) {
-        if (this.indicator) {
-            if (oldData.cursorColor !== this.data.cursorColor) {
-                this.indicator.material.color.set(this.data.cursorColor);
+        // Handle schema property changes at runtime
+        if (oldData.cursorColor !== this.data.cursorColor && this.teleportIndicator) {
+            this.teleportIndicator.material.color.set(this.data.cursorColor);
+        }
+        if (oldData.cursorOpacity !== this.data.cursorOpacity && this.teleportIndicator) {
+            this.teleportIndicator.material.opacity = this.data.cursorOpacity;
+        }
+        if (oldData.landingNormal !== this.data.landingNormal) {
+            this.referenceNormal.copy(this.data.landingNormal);
+        }
+    },
+
+    remove() {
+        // Proper cleanup to prevent memory leaks
+        this.cam = null;
+        this.canvas = null;
+        this.rayCastObjects.length = 0;
+        
+        if (this.vrCursor && this.vrCursorClickHandler) {
+            this.vrCursor.removeEventListener('click', this.vrCursorClickHandler);
+            this.vrCursorClickHandler = null;
+        }
+        
+        if (this.cursorEl && this.cursorClickHandler) {
+            this.cursorEl.removeEventListener('click', this.cursorClickHandler);
+            this.cursorClickHandler = null;
+        }
+        
+        if (this.teleportIndicator) {
+            this.el.sceneEl.object3D.remove(this.teleportIndicator);
+            this.teleportIndicator.material.dispose();
+            this.teleportIndicator.geometry.dispose();
+            this.teleportIndicator = null;
+        }
+        
+        if (this.collisionMesh) {
+            this.collisionMesh.geometry.dispose();
+            this.collisionMesh.material.dispose();
+            this.collisionMesh = null;
+        }
+        
+        // Clean up cached references
+        this.tunnelElement = null;
+        this.vrCursor = null;
+        this.vrRaycaster = null;
+    }
+});
+
+// Optimized VR Pinch-to-Teleport Component
+AFRAME.registerComponent("pinch-teleport-02", {
+    schema: {
+        cameraRig: { type: "selector", default: "" },
+        collisionEntities: { type: "string", default: ".collision" }
+    },
+
+    init() {
+        this.debugMode = window.location.search.includes('debug=true');
+        if (this.debugMode) console.log("navigation-05: Initializing optimized pinch-teleport");
+        
+        // Pre-allocate reusable objects
+        this.rayCaster = new THREE.Raycaster();
+        this.rayCastObjects = [];
+        this.handDirection = new THREE.Vector3();
+        this.handPosition = new THREE.Vector3();
+        
+        this.lastCollisionCount = 0;
+        this.lastRaycastCount = 0;
+        
+        this.createTeleportRing();
+        this.updateRaycastObjects();
+
+        // Bind methods once
+        this.onPinchStarted = this.onPinchStarted.bind(this);
+        this.onPinchEnded = this.onPinchEnded.bind(this);
+
+        // Add all event listeners
+        const events = ['pinchstarted', 'triggerdown', 'gripdown'];
+        const endEvents = ['pinchended', 'triggerup', 'gripup'];
+        
+        events.forEach(event => this.el.addEventListener(event, this.onPinchStarted));
+        endEvents.forEach(event => this.el.addEventListener(event, this.onPinchEnded));
+    },
+
+    createTeleportRing() {
+        const ringGeometry = new THREE.RingGeometry(0.2, 0.25, 32, 1);
+        ringGeometry.rotateX(-Math.PI / 2);
+        ringGeometry.translate(0, 0.02, 0);
+        
+        const ringMaterial = new THREE.MeshBasicMaterial({
+            color: "#00ff00",
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        this.teleportRing = new THREE.Mesh(ringGeometry, ringMaterial);
+        this.teleportRing.visible = false;
+        this.el.sceneEl.object3D.add(this.teleportRing);
+    },
+
+    updateRaycastObjects() {
+        const previousCount = this.rayCastObjects.length;
+        this.rayCastObjects.length = 0;
+        
+        if (this.data.collisionEntities) {
+            const collisionEntities = this.el.sceneEl.querySelectorAll(this.data.collisionEntities);
+            
+            if (this.debugMode && collisionEntities.length !== this.lastCollisionCount) {
+                console.log("navigation-05: Pinch-teleport collision entities:", collisionEntities.length);
+                this.lastCollisionCount = collisionEntities.length;
             }
-            if (oldData.cursorOpacity !== this.data.cursorOpacity) {
-                this.indicator.material.opacity = this.data.cursorOpacity;
+            
+            for (let i = 0; i < collisionEntities.length; i++) {
+                const entity = collisionEntities[i];
+                entity.object3D.traverse((obj) => {
+                    if (obj.isMesh) {
+                        obj.userData.collision = true;
+                        this.rayCastObjects.push(obj);
+                    }
+                });
+            }
+        }
+        
+        if (this.debugMode && this.rayCastObjects.length !== this.lastRaycastCount) {
+            console.log("navigation-05: Pinch-teleport raycast objects:", this.rayCastObjects.length);
+            this.lastRaycastCount = this.rayCastObjects.length;
+        }
+    },
+
+    getTeleportPosition() {
+        const handObject = this.el.object3D;
+        handObject.getWorldPosition(this.handPosition);
+        
+        // Reuse direction vector
+        this.handDirection.set(0, 0, -1).applyQuaternion(handObject.quaternion);
+        this.rayCaster.set(this.handPosition, this.handDirection);
+        
+        const intersects = this.rayCaster.intersectObjects(this.rayCastObjects);
+        
+        if (intersects.length > 0) {
+            const intersect = intersects[0];
+            if (intersect.object.userData.collision === true) {
+                return intersect.point;
+            }
+        }
+        
+        return null;
+    },
+
+    onPinchStarted(event) {
+        if (this.debugMode) console.log("navigation-05: Pinch started:", event.type);
+        const teleportPos = this.getTeleportPosition();
+        if (teleportPos) {
+            this.teleportRing.position.copy(teleportPos);
+            this.teleportRing.visible = true;
+        }
+    },
+
+    onPinchEnded(event) {
+        if (this.debugMode) console.log("navigation-05: Pinch ended:", event.type);
+        if (this.teleportRing.visible) {
+            const teleportPos = this.teleportRing.position.clone();
+            this.teleportToCameraRig(teleportPos);
+            this.teleportRing.visible = false;
+        }
+    },
+
+    teleportToCameraRig(position) {
+        if (!this.data.cameraRig) return;
+        
+        if (this.debugMode) console.log("navigation-05: Teleporting to:", position);
+        
+        const startPos = this.data.cameraRig.object3D.position.clone();
+        const endPos = position.clone();
+        
+        let progress = 0;
+        const duration = 500;
+        const startTime = performance.now();
+        
+        const animate = () => {
+            const elapsed = performance.now() - startTime;
+            progress = Math.min(elapsed / duration, 1);
+            
+            const easedProgress = progress < 0.5 ? 2 * progress * progress : (4 - 2 * progress) * progress - 1;
+            this.data.cameraRig.object3D.position.lerpVectors(startPos, endPos, easedProgress);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                this.data.cameraRig.object3D.position.copy(endPos);
+                if (this.debugMode) console.log("navigation-05: Teleport complete");
+            }
+        };
+        
+        animate();
+    },
+
+    tick() {
+        // Less frequent updates for better performance
+        if (!this.lastUpdate || performance.now() - this.lastUpdate > 30000) {
+            this.updateRaycastObjects();
+            this.lastUpdate = performance.now();
+        }
+        
+        // Update ring position efficiently
+        if (this.teleportRing.visible) {
+            const teleportPos = this.getTeleportPosition();
+            if (teleportPos) {
+                this.teleportRing.position.copy(teleportPos);
+            } else {
+                this.teleportRing.visible = false;
             }
         }
     },
 
     remove() {
-        // Cleanup indicator
-        if (this.indicator) {
-            this.el.sceneEl.object3D.remove(this.indicator);
-            this.indicator.geometry.dispose();
-            this.indicator.material.dispose();
+        // Proper cleanup
+        if (this.teleportRing) {
+            this.el.sceneEl.object3D.remove(this.teleportRing);
+            this.teleportRing.material.dispose();
+            this.teleportRing.geometry.dispose();
+            this.teleportRing = null;
         }
 
-        // Cleanup event listeners
-        if (this.cursorEl && this.handleClick) {
-            this.cursorEl.removeEventListener('click', this.handleClick);
-        }
-
-        const canvas = this.el.sceneEl?.canvas;
-        if (canvas) {
-            canvas.removeEventListener('mousedown', this.onMouseDown);
-            canvas.removeEventListener('mousemove', this.onMouseMove);
-            canvas.removeEventListener('mouseup', this.onMouseUp);
-        }
+        // Remove all event listeners with correct handler references
+        const startEvents = ['pinchstarted', 'triggerdown', 'gripdown'];
+        const endEvents = ['pinchended', 'triggerup', 'gripup'];
+        startEvents.forEach(event => this.el.removeEventListener(event, this.onPinchStarted));
+        endEvents.forEach(event => this.el.removeEventListener(event, this.onPinchEnded));
     }
 });
 
-// ============================================================================
-// GO-TO COMPONENT
-// Click to navigate to predefined position/rotation
-// Auto-finds camera rig - no selectors needed
-// ============================================================================
-AFRAME.registerComponent("go-to", {
+// Optimized click-teleport component
+AFRAME.registerComponent("click-teleport-03", {
     schema: {
-        position: { type: "vec3" },
-        rotation: { type: "vec3", default: { x: 0, y: 0, z: 0 } },
-        duration: { type: "number", default: 2000 },
-        easing: { type: "string", default: "easeInOutQuad" }
+        cameraRig: { type: "selector", default: "#cameraRig" }
     },
 
     init() {
-        this.debug = location.search.includes('debug=true');
-        this.log = createLogger('[go-to]', this.debug);
-
-        // Auto-find camera rig
-        const camera = this.el.sceneEl.querySelector('[camera]') || this.el.sceneEl.querySelector('a-camera');
-        this.rigEl = camera?.parentEl?.classList?.contains('a-entity') ? camera.parentEl : camera;
+        this.debugMode = window.location.search.includes('debug=true');
         
-        this.tunnelEl = null;
-        this.startQuat = new THREE.Quaternion();
-        this.endQuat = new THREE.Quaternion();
-        this.animatingRotation = false;
-        this.rotationStartTime = 0;
-
-        this.onClick = this.onClick.bind(this);
+        this.onClick = (event) => {
+            if (this.debugMode) console.log("navigation-05: Click-teleport activated");
+            
+            if (this.data.cameraRig && event.detail.intersection) {
+                const teleportPos = event.detail.intersection.point;
+                this.data.cameraRig.object3D.position.copy(teleportPos);
+                
+                this.el.sceneEl.emit("navigation-start");
+                setTimeout(() => this.el.sceneEl.emit("navigation-end"), 100);
+            }
+        };
+        
         this.el.addEventListener('click', this.onClick);
-    },
-
-    onClick(evt) {
-        if (!evt.detail?.intersection) return;
-
-        this.tunnelEl = this.tunnelEl || this.el.sceneEl.querySelector('#tunnel');
-        
-        if (this.tunnelEl) {
-            this.tunnelEl.removeAttribute('animation__down');
-            this.tunnelEl.setAttribute('animation__down', {
-                property: 'scale.y',
-                to: -1,
-                dur: 500,
-                easing: this.data.easing
-            });
-        }
-
-        this.moveCamera();
-    },
-
-    moveCamera() {
-        const startPos = this.rigEl.object3D.position.clone();
-        const { position, rotation, duration, easing } = this.data;
-
-        // Check if rotation is specified
-        const hasRotation = Math.abs(rotation.x) > 0.001 || 
-                           Math.abs(rotation.y) > 0.001 || 
-                           Math.abs(rotation.z) > 0.001;
-
-        if (hasRotation) {
-            this.startQuat.copy(this.rigEl.object3D.quaternion);
-            this.endQuat.setFromEuler(new THREE.Euler(
-                THREE.MathUtils.degToRad(rotation.x),
-                THREE.MathUtils.degToRad(rotation.y),
-                THREE.MathUtils.degToRad(rotation.z),
-                'YXZ'
-            ));
-            this.animatingRotation = true;
-            this.rotationStartTime = performance.now();
-        }
-
-        this.rigEl.removeAttribute('animation__go');
-        this.rigEl.setAttribute('animation__go', {
-            property: 'position',
-            dur: duration,
-            easing: easing,
-            from: `${startPos.x} ${startPos.y} ${startPos.z}`,
-            to: `${position.x} ${position.y} ${position.z}`
-        });
-
-        this.log('Moving to', position);
-
-        this.rigEl.addEventListener('animationcomplete__go', () => this.onAnimEnd(), { once: true });
-    },
-
-    onAnimEnd() {
-        if (this.animatingRotation) {
-            this.rigEl.object3D.quaternion.copy(this.endQuat);
-            this.animatingRotation = false;
-        }
-
-        this.tunnelUp();
-        this.rigEl.emit('go-to-complete');
-    },
-
-    tunnelUp() {
-        if (this.tunnelEl) {
-            this.tunnelEl.removeAttribute('animation__up');
-            this.tunnelEl.setAttribute('animation__up', {
-                property: 'scale.y',
-                to: 0.1,
-                dur: 500,
-                easing: this.data.easing
-            });
-        }
-    },
-
-    tick() {
-        if (!this.animatingRotation) return;
-
-        const elapsed = performance.now() - this.rotationStartTime;
-        const progress = Math.min(elapsed / this.data.duration, 1);
-        const eased = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
-
-        this.rigEl.object3D.quaternion.slerpQuaternions(this.startQuat, this.endQuat, eased);
-
-        if (progress >= 1) {
-            this.animatingRotation = false;
-            this.rigEl.object3D.quaternion.copy(this.endQuat);
-        }
     },
 
     remove() {
@@ -501,62 +1126,276 @@ AFRAME.registerComponent("go-to", {
     }
 });
 
-// ============================================================================
-// SAVE-POSITION-AND-ROTATION COMPONENT
-// Persists camera position/rotation to localStorage
-// Auto-finds camera - no selectors needed
-// ============================================================================
-AFRAME.registerComponent("save-position-and-rotation", {
-    init() {
-        const camera = this.el.sceneEl.querySelector('[camera]') || this.el.sceneEl.querySelector('a-camera');
-        this.rigEl = camera?.parentEl?.classList?.contains('a-entity') ? camera.parentEl : camera;
-
-        this.saveInterval = setInterval(() => {
-            try {
-                if (this.rigEl) {
-                    localStorage.setItem('cameraPosition', JSON.stringify(this.rigEl.getAttribute('position')));
-                    localStorage.setItem('cameraRotation', JSON.stringify(camera.getAttribute('rotation')));
-                }
-            } catch (e) {
-                // Storage may be unavailable
-            }
-        }, 5000);
+// Optimized go-to component with better performance
+AFRAME.registerComponent("go-to", {
+    schema: {
+        position: { type: "vec3" },
+        rotation: { type: "vec3", default: { x: 0, y: 0, z: 0 } },
+        unload: { type: "string", default: "" },
+        load: { type: "asset", default: "" },
+        duration: { type: "number", default: 2000 },
+        easing: { type: "string", default: "easeInOutQuad" },
     },
 
-    remove() {
-        clearInterval(this.saveInterval);
+    init: function () {
+        this.rigEl = document.getElementById("cameraRig");
+        this.sceneEl = this.el.sceneEl;
+        this.debugMode = window.location.search.includes('debug=true');
+
+        // Pre-allocate reusable objects
+        this.tempVector3 = new THREE.Vector3();
+        this.transitionRotStart = new THREE.Quaternion();
+        this.transitionRotEnd = new THREE.Quaternion();
+
+        // Initialize properties
+        this.animatingRotation = false;
+        this.rotationStartTime = 0;
+        this.rotationDuration = this.data.duration;
+        
+        // Bind methods
+        this.onClick = this.onClick.bind(this);
+        this.onAnimEnd = this.onAnimEnd.bind(this);
+        this.hideTunnel = this.hideTunnel.bind(this);
+
+        this.el.addEventListener("click", this.onClick);
+        window.addEventListener("keydown", this.hideTunnel);
+    },
+
+    onClick: function (evt) {
+        var intersection = evt.detail && evt.detail.intersection;
+        if (!intersection) return;
+
+        // Cache tunnel element for performance
+        if (!this.tunnelElement) {
+            this.tunnelElement = this.sceneEl.querySelector("#tunnel");
+        }
+
+        if (this.tunnelElement) {
+            this.tunnelElement.removeAttribute("animation__down");
+            this.tunnelElement.setAttribute("animation__down", {
+                property: "scale.y",
+                to: -1,
+                dur: 500,
+                easing: this.data.easing,
+            });
+        }
+
+        this.moveCamera();
+    },
+
+    moveCamera: function () {
+        this.tempVector3.copy(this.rigEl.object3D.position);
+
+        const hasRotation = (Math.abs(this.data.rotation.x) > 0.001) || 
+                          (Math.abs(this.data.rotation.y) > 0.001) || 
+                          (Math.abs(this.data.rotation.z) > 0.001);
+
+        if (hasRotation) {
+            this.transitionRotStart.copy(this.rigEl.object3D.quaternion);
+            
+            const targetEuler = new THREE.Euler(
+                THREE.MathUtils.degToRad(this.data.rotation.x),
+                THREE.MathUtils.degToRad(this.data.rotation.y),
+                THREE.MathUtils.degToRad(this.data.rotation.z),
+                'YXZ'
+            );
+            this.transitionRotEnd.setFromEuler(targetEuler);
+
+            this.animatingRotation = true;
+            this.rotationStartTime = performance.now();
+            this.rotationDuration = this.data.duration;
+        } else {
+            this.animatingRotation = false;
+        }
+
+        this.rigEl.removeAttribute("animation__go");
+        this.rigEl.setAttribute("animation__go", {
+            property: "position",
+            dur: this.data.duration,
+            easing: this.data.easing,
+            from: this.tempVector3.x + " " + this.tempVector3.y + " " + this.tempVector3.z,
+            to: this.data.position.x + " " + this.data.position.y + " " + this.data.position.z,
+        });
+
+        if (this.debugMode) {
+            console.log("go-to: Moving to:", this.data.position);
+            if (hasRotation) console.log("go-to: Rotating to:", this.data.rotation);
+        }
+
+        this.rigEl.addEventListener("animationcomplete__go", this.onAnimEnd, { once: true });
+    },
+
+    onAnimEnd: function () {
+        if (this.animatingRotation) {
+            this.rigEl.object3D.quaternion.copy(this.transitionRotEnd);
+            this.animatingRotation = false;
+        }
+
+        var hasReplace = this.data.unload && this.data.load;
+        if (hasReplace) {
+            var el = document.querySelector(this.data.unload);
+            if (el && el.getObject3D("mesh")) {
+                this._disposeOldMesh(el.getObject3D("mesh"));
+                el.removeObject3D("mesh");
+                el.removeAttribute("gltf-model");
+                el.setAttribute("gltf-model", this.data.load);
+                el.addEventListener("model-loaded", () => {
+                    this._tunnelUp();
+                    this.rigEl.emit("go-to-complete");
+                }, { once: true });
+                return;
+            }
+        }
+        
+        this._tunnelUp();
+        this.rigEl.emit("go-to-complete");
+    },
+
+    _disposeOldMesh: function(mesh) {
+        // Proper mesh disposal to prevent memory leaks
+        mesh.traverse(function (node) {
+            if (node.isMesh) {
+                if (node.geometry) node.geometry.dispose();
+                
+                const materials = Array.isArray(node.material) ? node.material : [node.material];
+                materials.forEach(function (material) {
+                    if (material) {
+                        Object.values(material).forEach(function (value) {
+                            if (value && value.isTexture) value.dispose();
+                        });
+                        material.dispose();
+                    }
+                });
+            }
+        });
+    },
+
+    tick: function(time, deltaTime) {
+        if (this.animatingRotation) {
+            const currentTime = performance.now();
+            const elapsed = currentTime - this.rotationStartTime;
+            const progress = Math.min(elapsed / this.rotationDuration, 1.0);
+
+            const easedProgress = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+
+            this.rigEl.object3D.quaternion.slerpQuaternions(
+                this.transitionRotStart, 
+                this.transitionRotEnd, 
+                easedProgress
+            );
+
+            if (progress >= 1.0) {
+                this.animatingRotation = false;
+                this.rigEl.object3D.quaternion.copy(this.transitionRotEnd);
+            }
+        }
+    },
+
+    _tunnelUp: function () {
+        if (this.tunnelElement) {
+            this.tunnelElement.removeAttribute("animation__up");
+            this.tunnelElement.setAttribute("animation__up", {
+                property: "scale.y",
+                to: 0.1,
+                dur: 500,
+                easing: this.data.easing,
+            });
+        }
+    },
+
+    hideTunnel: function() {
+        if (this.tunnelElement) {
+            this.tunnelElement.setAttribute("visible", false);
+        }
+    },
+
+    remove: function () {
+        this.el.removeEventListener("click", this.onClick);
+        window.removeEventListener("keydown", this.hideTunnel);
     }
 });
 
-// ============================================================================
-// DIAGNOSTIC UTILITY (debug mode only)
-// ============================================================================
-window.TeleportDiagnostic = {
-    run() {
-        if (!location.search.includes('debug=true')) return;
+// Optimized save position component
+AFRAME.registerComponent("save-position-and-rotation", {
+    schema: {},
+    init: function () {
+        this.debugMode = window.location.search.includes('debug=true');
+        if (this.debugMode) console.log("navigation-05: save-position-and-rotation initialized");
 
-        console.log('=== TELEPORT DIAGNOSTIC ===');
-        const scene = document.querySelector('a-scene');
-        const camera = document.querySelector('[camera]') || document.querySelector('a-camera');
-        const cursor = document.querySelector('a-cursor');
-        const navmeshes = document.querySelectorAll('[navmesh]');
+        const cameraRig = this.el;
+        const head = cameraRig.querySelector("[camera]");
 
-        console.log('Scene:', !!scene);
-        console.log('Camera:', !!camera);
-        console.log('Cursor:', !!cursor);
-        console.log('Navmeshes:', navmeshes.length);
+        const recordPositionAndRotation = () => {
+            try {
+                const position = cameraRig.getAttribute("position");
+                const rotation = head.getAttribute("rotation");
+                localStorage.setItem("position", JSON.stringify(position));
+                localStorage.setItem("rotation", JSON.stringify(rotation));
+            } catch (e) {
+                if (this.debugMode) console.warn("Failed to save position/rotation:", e);
+            }
+        };
 
-        const teleportComp = camera?.components['a-cursor-teleport'] || camera?.parentEl?.components['a-cursor-teleport'];
-        if (teleportComp) {
-            console.log('Teleport active, VR mode:', teleportComp.isVR);
+        this.saveInterval = setInterval(recordPositionAndRotation, 5000); // Less frequent saves
+    },
+
+    remove: function() {
+        if (this.saveInterval) {
+            clearInterval(this.saveInterval);
         }
-        console.log('=== END DIAGNOSTIC ===');
+    }
+});
+
+// Optimized diagnostic functions
+const TeleportDiagnostic = {
+    run() {
+        if (!window.location.search.includes('debug=true')) return; // Only run in debug mode
+        
+        console.log("=== navigation-05 OPTIMIZED DIAGNOSTIC ===");
+        
+        const scene = document.querySelector('a-scene');
+        const cameraRig = document.querySelector('#cameraRig');
+        const vrCursor = document.querySelector('a-cursor');
+        const collisionEntities = document.querySelectorAll('.collision');
+        
+        console.log("Scene:", !!scene, "| CameraRig:", !!cameraRig, "| VRCursor:", !!vrCursor, "| Collisions:", collisionEntities.length);
+        
+        if (cameraRig?.components['a-cursor-teleport']) {
+            const comp = cameraRig.components['a-cursor-teleport'];
+            console.log("Teleport Component - VR:", comp.isVR, "| Objects:", comp.rayCastObjects.length, "| Ready:", comp.vrCursorInitialized);
+        }
+        
+        console.log("=== END OPTIMIZED DIAGNOSTIC ===");
+    },
+
+    debugCurrentRoom() {
+        if (!window.location.search.includes('debug=true')) return;
+        
+        console.log("=== OPTIMIZED ROOM DEBUG ===");
+        const cameraRig = document.querySelector('#cameraRig');
+        if (cameraRig?.components['a-cursor-teleport']) {
+            const comp = cameraRig.components['a-cursor-teleport'];
+            console.log("Collision Objects:", comp.rayCastObjects.length, "| VR Ready:", comp.vrCursorInitialized);
+            
+            if (comp.rayCastObjects.length === 0) {
+                console.warn("NO COLLISION OBJECTS - checking alternatives...");
+                ['.collision', '.teleport-surface', 'a-plane'].forEach(sel => {
+                    const found = document.querySelectorAll(sel).length;
+                    if (found > 0) console.log(`Found ${found} elements with '${sel}'`);
+                });
+            }
+        }
+        console.log("=== END ROOM DEBUG ===");
     }
 };
 
-// Auto-run diagnostic in debug mode
-if (location.search.includes('debug=true')) {
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(window.TeleportDiagnostic.run, 2000);
-    });
+// Auto-run diagnostic (debug mode only)
+if (window.location.search.includes('debug=true')) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => setTimeout(TeleportDiagnostic.run, 2000));
+    } else {
+        setTimeout(TeleportDiagnostic.run, 2000);
+    }
 }
+
+window.TeleportDiagnostic = TeleportDiagnostic;

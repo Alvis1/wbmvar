@@ -41,7 +41,6 @@
       
       <a-sky color="#ECECEC"></a-sky>
 
-
         <!--Obst-->
         <a-entity gltf-model="#char" 
           class="clickable"
@@ -50,19 +49,24 @@
           scale="0.8 0.8 0.8"
         ></a-entity>
 
-
-
       <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="8" height="8" color="#7BC8A4"></a-plane>
 
-         <a-plane id="2ndroom" navmesh="" position="10.8963 0 -4" rotation="0 0 0" width="8" height="8" color="#7BC8A4"></a-plane>
+         <a-plane id="2ndroom" navmesh="" position="10.8963 0 -4" rotation="-90 0 0" width="8" height="8" color="#7BC8A4"></a-plane>
  
  
-      <a-camera a-cursor-teleport="cameraHeight: 1.6" look-controls="pointerLockEnabled: true" >
-    <a-cursor></a-cursor>
-    </a-camera>
 
-        <a-entity id="leftHand" improved-hand-grab="hand: left;"></a-entity>
-        <a-entity id="rightHand" improved-hand-grab="hand: right;"></a-entity>
+      <a-entity 
+        position="0 0 0" 
+        id="cameraRig" 
+        movement-controls="speed: 1.01; enabled:false"
+        a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
+        <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
+          <a-cursor color="white"></a-cursor>
+        </a-entity>
+        <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
+        <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
+      </a-entity>
+
       </a-entity>
 
       <a-entity position="0 -2 0" id="env" environment="preset: threetowers; skyType: gradient; ground: spikes; groundDensity: 63.27"><a-entity class="environment" position="0 50 0" light="color: #91d0b5; groundColor: #273a49; intensity: 1.884; type: hemisphere"></a-entity><a-entity class="environment" position="0.5 1 0" light="intensity: 1.884; shadowCameraTop: 10; shadowCameraRight: 10; shadowCameraBottom: -10; shadowCameraLeft: -10"></a-entity><a-entity rotation="-90 0 0" class="environmentGround environment" scale="1 1 4.26" shadow="cast: false; receive: false"></a-entity><a-entity class="environmentDressing environment"></a-entity><a-sky radius="200" theta-length="110" class="environment" material="shader: gradientshader; topColor: [object Object]; bottomColor: [object Object]"></a-sky></a-entity>
