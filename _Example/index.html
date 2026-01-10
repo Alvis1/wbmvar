@@ -16,16 +16,18 @@
 <!-- Custom component for animation switching on hover -->
 <script src="components/animation-switcher.js"></script>
 
+<script src="shaders/shaders.js"></script>
+
   </head>
   <body>
     <a-scene obb-collider="showColliders: false">
 
     <a-asset>
-        <a-asset-item id="char" src="objects/char01.glb"></a-asset-item>
+        <a-asset-item id="char" src="objects/char02.glb"></a-asset-item>
          <a-asset-item id="table" src="table.glb"></a-asset-item>
     </a-asset>
 
-      <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
+      <a-box position="-1 0.5 -3" rotation="0 45 0" material="shader: standard; color: red"></a-box>
 
 
 
@@ -50,6 +52,12 @@
           position="0 0.01223 -3.81011" 
           scale="0.8 0.8 0.8"
         ></a-entity>
+
+
+<!--ShaderSpheres-->
+<a-sphere position="0 1.5 -3" material="shader: sunray-cloud-shader"></a-sphere>
+
+<a-sphere position="2 1.5 -3" material="shader: water; amplitude: 1"></a-sphere>
 
 
 
