@@ -3,6 +3,22 @@
     {
       "name": "index.html",
       "path": "EdijsNiksEglītis/index.html"
+    },
+    {
+      "name": "task2.html",
+      "path": "EdijsNiksEglītis/task2.html"
+    }
+  ],
+  "HuguesLejeune": [
+    {
+      "name": "index.html",
+      "path": "HuguesLejeune/index.html"
+    }
+  ],
+  "IevaGintere": [
+    {
+      "name": "index.html",
+      "path": "IevaGintere/index.html"
     }
   ],
   "LeoMaurel": [
@@ -27,6 +43,10 @@
     {
       "name": "index.html",
       "path": "MaryiaBrauer/index.html"
+    },
+    {
+      "name": "task2.html",
+      "path": "MaryiaBrauer/task2.html"
     }
   ],
   "OtoJauja": [
@@ -41,8 +61,16 @@
       "path": "_Example/01_mechanism.html"
     },
     {
-      "name": "02_rooms_functional.html",
-      "path": "_Example/02_rooms_functional.html"
+      "name": "02_rooms_1functional.html",
+      "path": "_Example/02_rooms_1functional.html"
+    },
+    {
+      "name": "02_rooms_2visualaudio.html",
+      "path": "_Example/02_rooms_2visualaudio.html"
+    },
+    {
+      "name": "index.html",
+      "path": "_Example/index.html"
     }
   ]
 }
