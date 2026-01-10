@@ -1,0 +1,30 @@
+<head>
+  <title>My A-Frame Scene</title>
+  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+  <script src="https://unpkg.com/aframe-environment-component@1.3.3/dist/aframe-environment-component.min.js"></script>
+  <script src="https://unpkg.com/aframe-orbit-controls@1.3.2/dist/aframe-orbit-controls.min.js"></script>
+
+  <script src="comp/aframe-bmfont-component.js"></script>
+</head>
+
+<!--Assets-->
+  <a-asset>
+        <a-asset-item id="Ship" src="Objects/SpaceShipBlend.glb"></a-asset-item>
+  </a-asset>
+
+
+<!--Mixins-->
+
+
+<body>
+  <a-scene environment="preset: tron">
+  <a-entity gltf-model="#Ship"></a-entity>
+
+<a-camera look-controls wasd-controls="acceleration: 10; wsAxis: y; wsInverted: true" position="0 0 2">
+    <a-cursor color="white"></a-cursor>
+    <a-torus-knot position="0 -1.5 -5" scale="0.3 0.3 0.3"></a-torus-knot>
+</a-camera>
+
+
+  </a-scene>
+</body>
