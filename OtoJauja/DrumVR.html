@@ -1,0 +1,65 @@
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+
+    <!--Event-Set Component-->
+    <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
+
+    <!--A-Frame Extras-->
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+
+    <!--navigation component used in ImGame -->   
+    <script src="a-cursor-navigation.js"></script>
+
+    <!--Anination switcher-->
+    <script src="animation-switcher.js"></script>
+
+    <!--aframe-environment-component-->  
+    <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
+
+  </head>
+  <body>
+    <a-scene obb-collider="showColliders: false">
+        <!--Assets-->
+        <assets>
+            <a-asset-item id="char_dance" src="objects/character.glb"></a-asset-item>
+            <a-asset-item id="timpani" src="objects/timpani.glb"></a-asset-item>
+            <img id="koncerta-halle" src="images/concert_hall.jpg">
+            <audio id="timpani-hit" src="sounds/timpani_hit.mp3"></audio>
+        </assets>
+
+        <a-entity id="stuff">
+        </a-entity>
+
+        <!--Objects-->
+        <a-entity gltf-model="#char_dance"  class="clickable" position="0 0 -4.97052" animation-on-hover="defaultClip: Dancing; clickClip: DancingHipHop"></a-entity>
+        <a-entity gltf-model="#timpani" position="0.01387 0.5 -0.93811" obb-collider = "centerModel: true"  sound="src: #timpani-hit; on: click; poolSize: 100"
+            animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; loop: 1; from: 1 1 1; property: scale; to: 1.1 1.1 1.1; startEvents: obbcollisionstarted">
+        </a-entity>
+
+        <!--Env-->
+        <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#664735"></a-plane>
+        <a-plane navmesh position="0 0 0" rotation="-90 0 0" width="4" height="4" color="#664735"></a-plane>
+        <!--<a-entity environment="preset: egypt" position="0 -0.5 0"></a-entity>-->
+        <a-sky src="#koncerta-halle"></a-sky>
+
+
+         <!--Lights-->
+        <a-entity light="color: #999bff; intensity: 0.41; type: ambient" id="ambient"></a-entity>
+
+        <!--Camera with cursor and hand tracking enabled. Pinch gesture as click event-->
+
+        <a-entity 
+          position="0 0 0" 
+          id="cameraRig" 
+          movement-controls="speed: 1.01; enabled:false">
+          <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
+            <a-cursor color="white"></a-cursor>
+          </a-entity>
+          <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
+          <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
+        </a-entity>
+
+    </a-scene>
+  </body>
+</html>
