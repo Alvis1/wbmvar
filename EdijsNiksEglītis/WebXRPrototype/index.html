@@ -1,0 +1,139 @@
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+
+    <!--Event-Set Component-->
+    <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
+
+    <!--navigation component used in ImGame -->
+    <script src="components/a-cursor-navigation.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <assets>
+        <img id="sky" src="assets/forrest2-360.jpg" />
+        <img id="floor" src="assets/colorful-grass-texture-background.jpg" />
+
+        <a-asset-item id="Tree" src="objects/Trees.glb"></a-asset-item>
+        <a-asset-item id="RockWall" src="objects/RockWall1.glb"></a-asset-item>
+        <a-asset-item
+          id="TreeStump"
+          src="objects/Tree stump.glb"
+        ></a-asset-item>
+      </assets>
+
+      <a-entity id="MainWorld" visible="true">
+        <!--Sky-->
+        <a-sky src="#sky" position="0 150 0"></a-sky>
+
+        <!--Text for stump-->
+        <a-entity
+          position="0.63164 1.98724 -6.16996"
+          text="color: black; value: Click the stump to start learning!"
+          rotation="0 18.81421511871084 0"
+          scale="3 5 2"
+          id="textStump"
+          visible="false"
+        >
+        </a-entity>
+
+        <!--Trees-->
+        <a-entity
+          gltf-model="objects/Trees.glb"
+          position="7.94913 -0.1605 -11.2987"
+          rotation="0 28.07378604582008 0"
+        ></a-entity>
+
+        <!--Rocks-->
+        <a-entity
+          gltf-model="objects/RockWall1.glb"
+          position="-23.9814 -0.61499 -4.09926"
+          scale="2.20876 1 2.39374"
+          id="RockWall"
+        ></a-entity>
+
+        <!--Moving area-->
+        <a-plane
+          position="0 0 0"
+          rotation="-90 0 0"
+          width="50"
+          height="50"
+          material="src: #floor; repeat: 20 20; roughness: 1"
+        ></a-plane>
+      </a-entity>
+
+      <!--Method world-->
+      <a-entity
+        id="methodWorld"
+        position="0.18961 0.00151 -7.16006"
+        scale="0 0 0"
+        event-set__click="_target: #methodWorld; scale: 1 1 1;dur: 1500; easing: easeInOutCirc;"
+        event-set__enter="_event: mouseenter; _target: #textStump; visible: true"
+        event-set__leave="_event: mouseleave; _target: #textStump; visible: false"
+      >
+        <!--Moving area-->
+        <a-plane
+          position="0 0 0"
+          rotation="-90 0 0"
+          width="50"
+          height="50"
+          color="#7BC8A4"
+        ></a-plane>
+
+        <a-sphere
+          position="-2.60376 2.04632 -5"
+          radius="1.25"
+          color="#4CC3D9"
+          onclick="window.location.reload();"
+          event-set__enter="_event: mouseenter; color: grey"
+          event-set__leave="_event: mouseleave; color: #4CC3D9"
+          id="reset"
+          scale="0.5 0.5 0.5"
+        ></a-sphere>
+
+        <a-entity
+          position="-2.26322 3.65604 -4.61667"
+          text="color: black; value: Click to reset experience!"
+          rotation="0 27.384517818277697 0"
+          scale="3 5 2"
+          id="textReset"
+        >
+        </a-entity>
+
+        <a-sky color="green"></a-sky>
+      </a-entity>
+
+      <!--Stump-->
+      <a-entity
+        gltf-model="objects/Tree stump.glb"
+        position="0.18961 0.00151 -7.16006"
+        rotation="0 28.07378604582008 0"
+        scale="0.30724 0.21055 0.31294"
+        id="Stump"
+        visible="true"
+        event-set__enter="_event: mouseenter; _target: #textStump; visible: true"
+        event-set__leave="_event: mouseleave; _target: #textStump; visible: false"
+        event-set__show="_event: click; _target: #methodWorld; scale: 1 1 1;dur: 1500; easing: easeInOutCirc;"
+        event-set__hide="_event: click; _target: #MainWorld; scale: 0 0 0;dur: 1500; easing: easeInOutCirc;"
+      ></a-entity>
+
+      <!--Camera-->
+      <a-entity
+        position="0 0 -4.7027"
+        id="cameraRig"
+        movement-controls="speed: 1.01; enabled:false"
+        a-cursor-teleport="cameraHead: #head; cameraRig: #cameraRig"
+        rotation="0 0 0"
+      >
+        <a-entity
+          id="head"
+          position="0 1.6 0"
+          camera="near: 0.1"
+          look-controls=""
+        >
+          <a-cursor color="white" raycaster=""></a-cursor>
+        </a-entity>
+      </a-entity>
+    </a-scene>
+  </body>
+</html>
