@@ -17,10 +17,13 @@
   </head>
   <body>
     <a-scene obb-collider="showColliders: false">
+      <!--Door-->
       <a-box 
         id="door" color="pink" position="0.2 3.5 -9.4" scale="15 7 1" 
         animation__click="property: position; to: 0.2 -6.5 -9.4; dur: 1000; startEvents: click; easing: easeInOutCirc;">
       </a-box>
+
+      <!--Walls-->
       <a-box id="wall1" color="pink" position="7.7 3.5 -9.4" scale="25 7 1" rotation="0 90 0" ></a-box>
       <a-box id="wall2" color="pink" position="-7.7 3.5 -9.4" scale="25 7 1" rotation="0 90 0" ></a-box>
       <a-box id="wall3" color="pink" position="0.2 3.5 2.6" scale="15 7 1" ></a-box>
@@ -35,6 +38,7 @@
         position="2 1.5 -7" rotation="0 45 45" scale="0.2 0.2 0.2" color="green">
       </a-box>
 
+      <!--Pinch Cursor Click-->
       <a-box 
         id="big_green_cube" 
         position="2 1.5 -15" rotation="0 45 45" scale="1 1 1" color="black"
@@ -44,7 +48,6 @@
       </a-box>
         
       <!--Camera with cursor and hand tracking enabled. Pinch gesture as click event-->
-
       <a-entity 
         position="0 0 0" 
         id="cameraRig" 
@@ -56,6 +59,8 @@
         <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
         <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
       </a-entity>
+
+      <a-entity light="color: #999bff; intensity: 0.41; type: ambient" id="ambient"></a-entity>
 
       <a-plane navmesh="" position="0 0.2 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4" scale="5 9 9"></a-plane>
     </a-scene>
