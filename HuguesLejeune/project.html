@@ -1,0 +1,32 @@
+<html>
+    <head>
+        <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+
+        <script src="components/a-cursor-navigation.js"></script>
+    </head>
+    <body>
+        <a-scene>
+            <a-entity
+                position="0 0 0"
+                id="cameraRig"
+                movement-controls="speed: 1.01; enabled:false"
+                a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
+                <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
+                <a-cursor color="white"></a-cursor>
+                </a-entity>
+                <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
+                <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
+            </a-entity>
+
+            <a-plane navmesh position="0 0 0" rotation="-90 0 0" width="10" height="10" color="#7BC8A4"></a-plane>
+
+            <a-assets>
+                <a-asset-item id="brown-bear" src="objects/brown-bear.glb"></a-asset-item>
+                <!-- <a-asset-item id="bear2" src="objects/bear2.glb"></a-asset-item> -->
+            </a-assets>
+            <a-entity gltf-model="#brown-bear" position="1 0 -3" scale="0.02 0.02 0.02" animation-mixer="clampWhenFinished: true"></a-entity>
+            <!-- <a-entity gltf-model="#bear2" position="-1 0 -3" scale="2 2 2" animation-mixer="clampWhenFinished: true"></a-entity> -->
+        </a-scene>
+    </body>
+</html>
