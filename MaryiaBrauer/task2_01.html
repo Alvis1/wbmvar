@@ -1,0 +1,68 @@
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+
+    <!--aframe-environment-component-->
+    <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
+
+    <!--Event-Set Component-->
+    <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
+
+    <!--A-Frame Extras-->
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+ 
+    <!--navigation component used in ImGame -->   
+    <script src="components/a-cursor-navigation.js"></script>
+
+  </head>
+  <body>
+    <a-scene obb-collider="showColliders: false">
+      <!--Door-->
+      <a-box 
+        id="door" color="pink" position="0.2 3.5 -9.4" scale="15 7 1" 
+        animation__click="property: position; to: 0.2 -6.5 -9.4; dur: 1000; startEvents: click; easing: easeInOutCirc;">
+      </a-box>
+
+      <!--Walls-->
+      <a-box id="wall1" color="pink" position="7.7 3.5 -9.4" scale="25 7 1" rotation="0 90 0" ></a-box>
+      <a-box id="wall2" color="pink" position="-7.7 3.5 -9.4" scale="25 7 1" rotation="0 90 0" ></a-box>
+      <a-box id="wall3" color="pink" position="0.2 3.5 2.6" scale="15 7 1" ></a-box>
+      <a-box id="wall4" color="pink" position="0.2 3.5 -21.4" scale="15 7 1" ></a-box>
+
+      <!-- Out of the box environment! -->
+      <a-entity environment="preset: poison; dressingAmount: 500"></a-entity>
+
+      <!--Grabbing-->
+      <a-box 
+        id="small_green_cube" grabbable=" hoverEnabled: true; hoverColor: #red;"
+        position="2 1.5 -7" rotation="0 45 45" scale="0.2 0.2 0.2" color="green">
+      </a-box>
+
+      <!--Pinch Cursor Click-->
+      <a-box 
+        id="big_green_cube" 
+        position="2 1.5 -15" rotation="0 45 45" scale="1 1 1" color="black"
+        event-set__enter="_event: mouseenter; color: green"
+        event-set__leave="_event: mouseleave; color: black"
+        animation__click="property: scale; from: 1 1 1; to: 1.5 1.5 1.5; dur: 100; dir: alternate; loop: 1; easing: easeInOutCirc; startEvents: click; ">
+      </a-box>
+        
+      <!--Camera with cursor and hand tracking enabled. Pinch gesture as click event-->
+      <a-entity 
+        position="0 0 0" 
+        id="cameraRig" 
+        movement-controls="speed: 1.01; enabled:false"
+        a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
+        <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
+          <a-cursor color="white"></a-cursor>
+        </a-entity>
+        <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
+        <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
+      </a-entity>
+
+      <a-entity light="color: #999bff; intensity: 0.41; type: ambient" id="ambient"></a-entity>
+
+      <a-plane navmesh="" position="0 0.2 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4" scale="5 9 9"></a-plane>
+    </a-scene>
+  </body>
+</html>
