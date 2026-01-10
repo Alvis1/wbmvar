@@ -61,9 +61,24 @@ rotation="0 10 0"></a-entity>
         </a-box> </a-entity>
 
 <!--Camera-->
-<a-camera
-><a-cursor></a-cursor></a-camera>
-      </a-scene>
+      <a-entity 
+        position="0 0 0" 
+        id="cameraRig" 
+        movement-controls="speed: 1.01; enabled:false"
+        a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
+        <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
+          <a-cursor color="white"></a-cursor>
+        </a-entity>
+        <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
+        <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
+      </a-entity>
+
+        
+
+
+
+      <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+      <a-sky color="#ECECEC"></a-sky>
       
   </body>
 </html>
