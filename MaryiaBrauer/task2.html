@@ -14,38 +14,26 @@
     <!--navigation component used in ImGame -->   
     <script src="components/a-cursor-navigation.js"></script>
 
-    <!--physics script-->
-    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
-
   </head>
   <body>
     <a-scene obb-collider="showColliders: false" physics="debug: true">
       <a-box 
-        id="door" color="pink" position="0.2 3.5 -9.4" scale="15 7 1" static-body
-        animation_open="property: position; to: 0.2 -4 -9.4; dur: 800;  easing: easeInOutQuad; startEvents: openDoor">
-    </a-box>
-      <a-box id="wall1" color="pink" position="7.7 3.5 -9.4" scale="25 7 1" rotation="0 90 0" static-body></a-box>
-      <a-box id="wall2" color="pink" position="-7.7 3.5 -9.4" scale="25 7 1" rotation="0 90 0" static-body></a-box>
-      <a-box id="wall3" color="pink" position="0.2 3.5 2.6" scale="15 7 1" static-body></a-box>
-      <a-box id="wall4" color="pink" position="0.2 3.5 -21.4" scale="15 7 1" static-body></a-box>
+        id="door" color="pink" position="0.2 3.5 -9.4" scale="15 7 1" 
+        animation_open="property: position; to: 0.2 -4 -9.4; dur: 800;  easing: easeInOutQuad; startEvents: openDoor"
+      ></a-box>
+      <a-box id="wall1" color="pink" position="7.7 3.5 -9.4" scale="25 7 1" rotation="0 90 0" ></a-box>
+      <a-box id="wall2" color="pink" position="-7.7 3.5 -9.4" scale="25 7 1" rotation="0 90 0" ></a-box>
+      <a-box id="wall3" color="pink" position="0.2 3.5 2.6" scale="15 7 1" ></a-box>
+      <a-box id="wall4" color="pink" position="0.2 3.5 -21.4" scale="15 7 1" ></a-box>
 
       <!-- Out of the box environment! -->
       <a-entity environment="preset: poison; dressingAmount: 500"></a-entity>
 
-      <!--Pinc Cursor Click-->
-      <a-box 
-        id="green_cube"
-        position="2 1.5 -7" rotation="0 45 45" scale="0.2 0.2 0.2" color="green" static-body class="clickable"
-        event-set__hover="_event: mouseenter; color: red; _target: #door; _emit: openDoor">
-      </a-box>
-
       <!--Grabbing-->
-      <!--<a-cylinder grabbable=" hoverEnabled: true; hoverColor: #red;" position="0 1.0289 -0.38727" radius="0.5" height="1.5" color="#FFC65D" scale="0.3 0.3 0.3" rotation="0 0 -48.13475732673559"></a-cylinder>
-
-
-      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>-->
-
-
+      <a-box 
+        id="green_cube" grabbable=" hoverEnabled: true; hoverColor: #red;"
+        position="2 1.5 -7" rotation="0 45 45" scale="0.2 0.2 0.2" color="green">
+      </a-box>
         
       <!--Camera with cursor and hand tracking enabled. Pinch gesture as click event-->
 
@@ -55,7 +43,7 @@
         movement-controls="speed: 1.01; enabled:false"
         a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
         <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
-          <a-cursor color="white" raycaster="objects: .clickable"></a-cursor>
+          <a-cursor color="white"></a-cursor>
         </a-entity>
         <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
         <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
