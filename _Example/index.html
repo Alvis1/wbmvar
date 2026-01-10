@@ -16,17 +16,18 @@
 <!-- Custom component for animation switching on hover -->
 <script src="components/animation-switcher.js"></script>
 
+<script src="shaders/shaders.js"></script>
+
   </head>
   <body>
     <a-scene obb-collider="showColliders: false">
 
     <a-asset>
-        <a-asset-item id="char" src="objects/char01.glb"></a-asset-item>
+        <a-asset-item id="char" src="objects/char02.glb"></a-asset-item>
          <a-asset-item id="table" src="table.glb"></a-asset-item>
     </a-asset>
 
-      <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
-
+      <a-box position="-1 0.5 -3" rotation="0 45 0" material="shader: standard; color: red"></a-box>
 
       <a-sphere position="0 1.25 -10" radius="1.25" color="#EF2D5E"
         event-set__entergreen="_event: mouseenter; color: green"
@@ -34,7 +35,6 @@
         animation__click="property: scale; from: 1 1 1; to: 1.5 1.5 1.5; dur: 100; dir: alternate; loop: 1; easing: easeInOutCirc; startEvents: click"
     
       ></a-sphere>
-
 
 
       <a-cylinder grabbable position="1 1 1" radius="0.2" height="0.5" color="#FFC65D"></a-cylinder>
@@ -48,6 +48,14 @@
           position="0 0.01223 -3.81011" 
           scale="0.8 0.8 0.8"
         ></a-entity>
+
+
+<!--ShaderSpheres-->
+<a-sphere position="0 1.5 -3" material="shader: sunray-cloud-shader"></a-sphere>
+
+<a-sphere position="2 1.5 -3" material="shader: water; amplitude: 1"></a-sphere>
+
+
 
       <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="8" height="8" color="#7BC8A4"></a-plane>
 
