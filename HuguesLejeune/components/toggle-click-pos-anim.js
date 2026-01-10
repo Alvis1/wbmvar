@@ -8,15 +8,14 @@ AFRAME.registerComponent('toggle-click-pos-anim', {
 
     init() {
         this.toggled = false;
-        this.origin = this.el.getAttribute('position');
+        this.origin = {...this.el.getAttribute('position')};
 
         this.el.addEventListener('click', () => {
             const to = this.toggled ? this.origin : this.data.to;
-            console.log('Animating to:', to);
 
             this.el.setAttribute(
-                'animation__click',
-                `property: position; to: ${to.x} ${to.y} ${to.z}; dur: ${this.data.dur}; easing: ${this.data.easing}; dir: alternate; startEvents: click`
+                'animation',
+                `property: position; to: ${to.x} ${to.y} ${to.z}; dur: ${this.data.dur}; easing: ${this.data.easing}`
             );
             this.toggled = !this.toggled;
         });
