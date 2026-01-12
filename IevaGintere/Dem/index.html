@@ -1,0 +1,147 @@
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  </head>
+  <body>
+    <a-scene fog="type: exponential; density: 0.04; color: #48923f">
+      <!-- assets -->
+      <a-assets>
+        <a-asset-item src="./Models/roots.glb" id="roots"></a-asset-item>
+        <a-asset-item src="./Models/soleil.glb" id="soleil"></a-asset-item>
+        <a-asset-item
+          src="./Models/dandelions.glb"
+          id="dandelions"
+        ></a-asset-item>
+        <a-asset-item src="./Models/grass.glb" id="grass"></a-asset-item>
+        <a-asset-item src="./Models/shed.glb" id="shed"></a-asset-item>
+        <a-asset-item src="./Models/tree.glb" id="tree"></a-asset-item>
+        <a-asset-item
+          src="./Models/maple_tree.glb"
+          id="maple_tree"
+        ></a-asset-item>
+        <audio
+          id="Gnossienne"
+          src="./Models/Gnossienne-N1-Satie.mp3"
+          preload="auto"
+        ></audio>
+      </a-assets>
+
+      <!-- Sun -->
+      <a-entity
+        gltf-model="./Models/soleil.glb"
+        id="soleil-entity"
+        position="-24 10 -28"
+        scale="0.36101 0.36101 -0.22909"
+      >
+        <!-- light -->
+        <a-entity
+          light="color: orange; intensity: 5"
+          position="-32.21666 16.26874 -126.44166"
+        ></a-entity>
+      </a-entity>
+
+      <!-- roots -->
+      <a-entity
+        gltf-model="./Models/roots.glb"
+        id="roots-entity"
+        position="-6 -6 -11"
+        scale="2 2 2"
+      >
+        <!-- light -->
+        <a-entity
+          light="color: #f3c212; intensity: 1; castShadow: true"
+          position="0 1.87938 0"
+        ></a-entity>
+      </a-entity>
+
+      <!-- dandelions -->
+      <a-entity
+        gltf-model="./Models/dandelions.glb"
+        id="dandelions-entity"
+        position="-4 -2 -11"
+        scale="1.09629 1.39257 -0.53237"
+      ></a-entity>
+
+      <!-- grass1 -->
+      <a-entity
+        gltf-model="./Models/grass.glb"
+        id="grass-entity1"
+        position="12 -2 -17"
+        scale="3 3 3"
+      ></a-entity>
+
+      <!-- grass2 -->
+      <a-entity
+        gltf-model="./Models/grass.glb"
+        id="grass-entity2"
+        position="1 -2 -15"
+        scale="3 3 3"
+      ></a-entity>
+
+      <!-- grass3 -->
+      <a-entity
+        gltf-model="./Models/grass.glb"
+        id="grass-entity3"
+        position="5 -2 -11"
+        scale="3 3 3"
+      ></a-entity>
+
+      <!-- grass4 -->
+      <a-entity
+        gltf-model="./Models/grass.glb"
+        id="grass-entity4"
+        position="8 -2 -12"
+        scale="3 3 3"
+      ></a-entity>
+
+      <!-- shed -->
+      <a-entity
+        gltf-model="./Models/shed.glb"
+        id="shed-entity"
+        position="-27 -8 -24"
+        scale="0.02 0.02 0.02"
+      ></a-entity>
+
+      <!-- tree -->
+      <a-entity
+        gltf-model="./Models/tree.glb"
+        id="tree-entity"
+        position="13.67512 -2.53821 -17.51628"
+        scale="0.2 0.2 0.2"
+      ></a-entity>
+
+      <!-- maple_tree -->
+      <a-entity
+        gltf-model="./Models/maple_tree.glb"
+        id="maple_tree-entity"
+        position="-18 -4 -25"
+        scale="0.05 0.05 0.05"
+      ></a-entity>
+
+      <!-- sound -->
+      <a-sound src="#Gnossienne" autoplay="true" position="0 2 5"></a-sound>
+
+      <a-sky color="green" material="color: #29c743"></a-sky>
+    </a-scene>
+
+    <script>
+      // Resume AudioContext on user interaction to enable autoplay
+      document.addEventListener(
+        "click",
+        function () {
+          if (AFRAME && AFRAME.scenes && AFRAME.scenes[0]) {
+            const scene = AFRAME.scenes[0];
+            if (
+              scene.audioListener &&
+              scene.audioListener.context &&
+              scene.audioListener.context.state === "suspended"
+            ) {
+              scene.audioListener.context.resume();
+            }
+          }
+        },
+        { once: true }
+      );
+    </script>
+  </body>
+</html>
