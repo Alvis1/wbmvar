@@ -16,7 +16,8 @@
     <script src="a-cursor-navigation.js"></script>
 <!--Shooting-Script--> 
   <script src="aframe-super-shooter-kit.min.js"></script>
-<!--Click-toshoot -->
+<!--Click-to-shoot -->
+  <script src="aframe-super-shooter-kit.min.js"></script>
 <script>
     AFRAME.registerComponent('click-to-shoot', {
       init: function () {
@@ -75,7 +76,14 @@
 
 <!--World-->
 <body>
-  <a-scene background="color: #DADADA" obb-collider="showColliders: false" environment="preset: tron">
+  <a-scene environment="preset: tron; ground: noise; groundTexture: none; dressing: none" fog="color: #940000; far: 83.99999999999999">
+
+
+<a-entity position="0 0.99938 0" text="color: white; value: Get in loser. We're going shooting.; width: 1.5">
+      </a-entity>
+
+
+
 
   <a-entity id="bulletTemplate" bullet gltf-model="#Bull" material="color: orange"></a-entity>
 
