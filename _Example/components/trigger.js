@@ -49,10 +49,6 @@ Animation
 
       */
 
-
-
-
-
 AFRAME.registerComponent("load", {
   schema: {
     entity: { default: "" },
@@ -94,7 +90,7 @@ AFRAME.registerComponent("load", {
             const entity = temp.querySelector("#" + entityId);
             if (entity) {
               targetEntity.appendChild(entity);
-              console.log(entityId + " loaded in:", targetEntity)
+              console.log(entityId + " loaded in:", targetEntity);
             }
           });
         }
@@ -192,6 +188,13 @@ AFRAME.registerComponent("anim", {
     clips: {
       default: [],
       parse: function (value) {
+        // Handle case when value is not a string (e.g., already an array or undefined)
+        if (typeof value !== "string") {
+          return Array.isArray(value) ? value : [];
+        }
+        if (!value.trim()) {
+          return [];
+        }
         const clipsArray = value.split(",").map((str) => str.trim());
         return clipsArray.map((clipStr) => {
           const [clipName, paramStr] = clipStr
@@ -241,7 +244,16 @@ AFRAME.registerComponent("anim", {
     const self = this; // Store the reference to 'this' for later use
     self.anim_actions = []; // Array to store animation actions
 
-    const targetEntity = data.id ? document.querySelector(data.id) : el;
+    let targetEntity = el;
+    if (data.id) {
+      // Add # prefix if not present for ID selector
+      const selector = data.id.startsWith("#") ? data.id : "#" + data.id;
+      targetEntity = document.querySelector(selector);
+      if (!targetEntity) {
+        console.warn(`anim component: Target entity '${data.id}' not found.`);
+        return;
+      }
+    }
 
     targetEntity.addEventListener("model-loaded", function () {
       self.model = targetEntity.getObject3D("mesh");
@@ -547,15 +559,15 @@ AFRAME.registerComponent("anim", {
   },
 });
 
-
-
 const addClickEvent = () => {
-  document.addEventListener('click', () => {
-      const video = document.querySelector('video');
-      const videoMessage = document.getElementById('LoadExib');
+  document.addEventListener("click", () => {
+    const video = document.querySelector("video");
+    const videoMessage = document.getElementById("LoadExib");
 
+    if (video) {
       video.play();
-  });  
+    }
+  });
 };
 
-window.addEventListener('load', addClickEvent);
+window.addEventListener("load", addClickEvent);
