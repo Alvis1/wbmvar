@@ -7,6 +7,19 @@
     </head>
     <body>
         <a-scene>
+            <a-assets>
+                <img id="forest-panorama" src="images/forest-panorama.jpg">
+            </a-assets>
+            <a-assets>
+                <a-asset-item id="brown-bear" src="objects/brown-bear.glb"></a-asset-item>
+            </a-assets>
+            <a-assets>
+                <a-asset-item id="pine-tree" src="objects/pine-tree.glb"></a-asset-item>
+            </a-assets>
+            <a-assets>
+                <a-asset-item id="oak-trees" src="objects/oak-trees.glb"></a-asset-item>
+            </a-assets>
+
             <a-entity
                 position="0 0 0"
                 id="cameraRig"
@@ -19,10 +32,7 @@
                 <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
             </a-entity>
 
-            <a-assets>
-                <img id="forest-panorama" src="images/forest-panorama.jpg">
-            </a-assets>
-            <a-sky src="#forest-panorama" rotation="0 -90 0" scale="0.1 0.1 0.1"></a-sky>
+            <a-sky src="#forest-panorama" rotation="0 -90 0"></a-sky>
 
             <a-plane
                 navmesh
@@ -41,10 +51,11 @@
                 line__4="start: -3 0.01 3; end: -3 0.01 -3; color: #ff0000">
             </a-entity>
 
-            <a-assets>
-                <a-asset-item id="brown-bear" src="objects/brown-bear.glb"></a-asset-item>
-            </a-assets>
             <a-entity gltf-model="#brown-bear" position="2.5 0 -2.8" scale="0.02 0.02 0.02" animation-mixer="clampWhenFinished: true"></a-entity>
+
+            <a-entity gltf-model="#pine-tree" position="1.5 0 0" scale="3 3 3"></a-entity>
+            <a-entity gltf-model="#pine-tree" position="3.7 0 -1.3" scale="1.8 1.8 1.8"></a-entity>
+            <a-entity gltf-model="#pine-tree" position="3 0 -5" scale="2.4 2.4 2.4"></a-entity>
         </a-scene>
     </body>
 </html>
