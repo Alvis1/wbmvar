@@ -19,14 +19,32 @@
                 <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
             </a-entity>
 
-            <a-plane navmesh position="0 0 0" rotation="-90 0 0" width="10" height="10" color="#7BC8A4"></a-plane>
+            <a-assets>
+                <img id="forest-panorama" src="images/forest-panorama.jpg">
+            </a-assets>
+            <a-sky src="#forest-panorama" rotation="0 -90 0" scale="0.1 0.1 0.1"></a-sky>
+
+            <a-plane
+                navmesh
+                position="2.5 0 -2.5"
+                rotation="-90 0 0"
+                width="6"
+                height="6"
+                color="#7BC8A4"
+                material="opacity: 0.0; transparent: true">
+            </a-plane>
+            <a-entity
+                position="2.5 0 -2.5"
+                line="start: -3 0.01 -3; end: 3 0.01 -3; color: #ff0000"
+                line__2="start: 3 0.01 -3; end: 3 0.01 3; color: #ff0000"
+                line__3="start: 3 0.01 3; end: -3 0.01 3; color: #ff0000"
+                line__4="start: -3 0.01 3; end: -3 0.01 -3; color: #ff0000">
+            </a-entity>
 
             <a-assets>
                 <a-asset-item id="brown-bear" src="objects/brown-bear.glb"></a-asset-item>
-                <!-- <a-asset-item id="bear2" src="objects/bear2.glb"></a-asset-item> -->
             </a-assets>
-            <a-entity gltf-model="#brown-bear" position="1 0 -3" scale="0.02 0.02 0.02" animation-mixer="clampWhenFinished: true"></a-entity>
-            <!-- <a-entity gltf-model="#bear2" position="-1 0 -3" scale="2 2 2" animation-mixer="clampWhenFinished: true"></a-entity> -->
+            <a-entity gltf-model="#brown-bear" position="2.5 0 -2.8" scale="0.02 0.02 0.02" animation-mixer="clampWhenFinished: true"></a-entity>
         </a-scene>
     </body>
 </html>
