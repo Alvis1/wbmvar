@@ -1,29 +1,29 @@
 /**
- * Animation Switcher Component (Universal)
+ * Animation Trigger Component (Universal)
  * Switches animations on various events (hover, click, proximity, custom events, timer, etc.)
  *
  * Usage examples:
- *   animation-switcher="defaultClip: Idle; hoverClip: Wave"
- *   animation-switcher="defaultClip: Idle; hoverClip: Dance; clickClip: Jump"
- *   animation-switcher="defaultClip: Idle; proximityClip: Attack; proximityDistance: 3"
- *   animation-switcher="defaultClip: Idle; triggerEvent: activate; triggerClip: Action"
- *   animation-switcher="defaultClip: Idle; focusClip: Alert; blurClip: Sleep"
- *   animation-switcher="clips: Idle, Walk, Run; randomize: true; intervalMin: 2; intervalMax: 5"
+ *   animation-trigger="idle: Idle; hover: Wave"
+ *   animation-trigger="idle: Idle; hover: Dance; click: Jump"
+ *   animation-trigger="idle: Idle; proximity: Attack; proximityDistance: 3"
+ *   animation-trigger="idle: Idle; triggerEvent: activate; trigger: Action"
+ *   animation-trigger="idle: Idle; focus: Alert; blur: Sleep"
+ *   animation-trigger="clips: Idle, Walk, Run; randomize: true; intervalMin: 2; intervalMax: 5"
  *
- * Also registers legacy 'animation-on-hover' as an alias for backwards compatibility.
+ * Also registers legacy 'animation-on-hover' and 'animation-switcher' as aliases for backwards compatibility.
  */
 (function () {
   var componentDefinition = {
     schema: {
-      // Animation clips
-      defaultClip: { type: "string", default: "" },
-      hoverClip: { type: "string", default: "" },
-      clickClip: { type: "string", default: "" },
-      proximityClip: { type: "string", default: "" },
-      focusClip: { type: "string", default: "" }, // When element gains focus
-      blurClip: { type: "string", default: "" }, // When element loses focus
-      triggerClip: { type: "string", default: "" }, // Custom event trigger
-      triggerEndClip: { type: "string", default: "" }, // When custom trigger ends
+      // Animation names for each trigger state
+      idle: { type: "string", default: "" },
+      hover: { type: "string", default: "" },
+      click: { type: "string", default: "" },
+      proximity: { type: "string", default: "" },
+      focus: { type: "string", default: "" }, // When element gains focus
+      blur: { type: "string", default: "" }, // When element loses focus
+      trigger: { type: "string", default: "" }, // Custom event trigger
+      triggerEnd: { type: "string", default: "" }, // When custom trigger ends
 
       // Sequence/Random animation support
       clips: { type: "string", default: "" }, // Comma-separated list of clips for sequence/random
@@ -55,7 +55,7 @@
       makeClickable: { type: "boolean", default: true }, // Add clickable class to element
       priority: {
         type: "string",
-        default: "proximity,trigger,click,hover,focus,default",
+        default: "proximity,trigger,click,hover,focus,idle",
       }, // State priority order
       enabled: { type: "boolean", default: true }, // Enable/disable the component
 
@@ -68,7 +68,7 @@
 
       // State tracking
       this.currentClip = "";
-      this.currentState = "default";
+      this.currentState = "idle";
       this.states = {
         hover: false,
         focus: false,
@@ -84,6 +84,13 @@
 
       // Proximity throttling
       this.lastProximityCheck = 0;
+
+      // Reusable Vector3 objects to avoid GC in tick()
+      this._targetPos = new THREE.Vector3();
+      this._myPos = new THREE.Vector3();
+
+      // Cache parsed priorities (will be set in update/init)
+      this._parsedPriorities = null;
 
       // Bind methods
       this.bindMethods();
@@ -103,6 +110,8 @@
     },
 
     onModelLoaded: function () {
+      var self = this;
+
       if (this.data.makeClickable) {
         this.el.classList.add("clickable");
         this.addClickableToChildren();
@@ -111,15 +120,19 @@
       this.parseClipList();
       this.addEventListeners();
 
-      // Set initial animation with optional delay
-      var self = this;
-      if (this.data.startDelay > 0) {
-        setTimeout(function () {
-          self.updateAnimationState();
-        }, this.data.startDelay * 1000);
-      } else {
-        this.updateAnimationState();
-      }
+      // Log available animations from the model
+      this.logAvailableAnimations();
+
+      // Wait a frame for animation-mixer to initialize, then play initial animation
+      setTimeout(function () {
+        if (self.data.startDelay > 0) {
+          setTimeout(function () {
+            self.playInitialAnimation();
+          }, self.data.startDelay * 1000);
+        } else {
+          self.playInitialAnimation();
+        }
+      }, 0);
 
       // Start auto-switch if configured
       if (
@@ -129,10 +142,43 @@
         this.scheduleNextAutoSwitch();
       }
 
-      this.log("Animation switcher initialized");
-      this.el.emit("animation-switcher-ready", {
+      this.log("Animation trigger initialized");
+      this.el.emit("animation-trigger-ready", {
         clips: this.getAvailableClips(),
       });
+    },
+
+    logAvailableAnimations: function () {
+      if (!this.data.debug) return;
+
+      var model = this.el.getObject3D("mesh");
+      if (model && model.animations && model.animations.length > 0) {
+        var names = model.animations.map(function (clip) {
+          return clip.name;
+        });
+        this.log("Available animations in model:", names);
+      } else {
+        this.log("No animations found in model or model not loaded yet");
+      }
+    },
+
+    playInitialAnimation: function () {
+      // Force play the initial/idle animation
+      var clipToPlay = this.data.idle;
+
+      // If using clips list and no idle, use first clip
+      if (!clipToPlay && this.clipList.length > 0) {
+        clipToPlay = this.clipList[0];
+      }
+
+      this.log("playInitialAnimation, clipToPlay:", clipToPlay);
+
+      if (clipToPlay) {
+        this.currentClip = ""; // Reset to force play
+        this.playAnimation(clipToPlay);
+      } else {
+        this.log("No clip to play!");
+      }
     },
 
     parseClipList: function () {
@@ -170,24 +216,24 @@
       var el = this.el;
 
       // Hover events
-      if (this.data.hoverClip) {
+      if (this.data.hover) {
         el.addEventListener("mouseenter", this.onMouseEnter);
         el.addEventListener("mouseleave", this.onMouseLeave);
       }
 
       // Click events
-      if (this.data.clickClip) {
+      if (this.data.click) {
         el.addEventListener("click", this.onClick);
       }
 
       // Focus events
-      if (this.data.focusClip || this.data.blurClip) {
+      if (this.data.focus || this.data.blur) {
         el.addEventListener("focus", this.onFocus);
         el.addEventListener("blur", this.onBlur);
       }
 
       // Custom trigger events
-      if (this.data.triggerEvent && this.data.triggerClip) {
+      if (this.data.triggerEvent && this.data.trigger) {
         el.addEventListener(this.data.triggerEvent, this.onTrigger);
       }
 
@@ -241,7 +287,7 @@
 
       if (this.data.clickOnce) {
         this.playAnimationOnce(
-          this.data.clickClip,
+          this.data.click,
           function () {
             this.states.click = false;
             this.updateAnimationState();
@@ -251,7 +297,7 @@
         this.updateAnimationState();
       }
 
-      this.el.emit("animation-clicked", { clip: this.data.clickClip });
+      this.el.emit("animation-clicked", { clip: this.data.click });
     },
 
     onFocus: function () {
@@ -276,7 +322,7 @@
 
       this.el.emit("animation-triggered", {
         event: this.data.triggerEvent,
-        clip: this.data.triggerClip,
+        clip: this.data.trigger,
         detail: evt.detail,
       });
     },
@@ -286,9 +332,9 @@
       this.states.trigger = false;
       this.log("Trigger end event:", this.data.triggerEndEvent);
 
-      if (this.data.triggerEndClip) {
+      if (this.data.triggerEnd) {
         this.playAnimationOnce(
-          this.data.triggerEndClip,
+          this.data.triggerEnd,
           function () {
             this.updateAnimationState();
           }.bind(this)
@@ -299,7 +345,7 @@
     },
 
     onAnimationFinished: function (evt) {
-      this.el.emit("animation-switcher-finished", {
+      this.el.emit("animation-trigger-finished", {
         clip: this.currentClip,
         state: this.currentState,
       });
@@ -307,8 +353,12 @@
 
     // Proximity check in tick
     tick: function (time) {
-      if (!this.data.enabled) return;
-      if (!this.data.proximityClip || !this.data.proximityTarget) return;
+      if (
+        !this.data.enabled ||
+        !this.data.proximity ||
+        !this.data.proximityTarget
+      )
+        return;
 
       // Throttle proximity checks
       if (time - this.lastProximityCheck < this.data.proximityCheckInterval)
@@ -318,8 +368,9 @@
       var target = this.data.proximityTarget;
       if (!target || !target.object3D) return;
 
-      var targetPos = target.object3D.getWorldPosition(new THREE.Vector3());
-      var myPos = this.el.object3D.getWorldPosition(new THREE.Vector3());
+      // Reuse Vector3 objects to avoid garbage collection
+      var targetPos = target.object3D.getWorldPosition(this._targetPos);
+      var myPos = this.el.object3D.getWorldPosition(this._myPos);
       var distance = targetPos.distanceTo(myPos);
 
       var wasInProximity = this.states.proximity;
@@ -345,64 +396,59 @@
     updateAnimationState: function () {
       if (!this.data.enabled) return;
 
-      var priorities = this.data.priority.split(",").map(function (s) {
-        return s.trim();
-      });
-      var clipToPlay = this.data.defaultClip;
-      var newState = "default";
+      // Use cached priorities for better performance
+      var priorities = this._parsedPriorities;
+      var clipToPlay = this.data.idle;
+      var newState = "idle";
 
       for (var i = 0; i < priorities.length; i++) {
         var state = priorities[i];
 
         switch (state) {
           case "proximity":
-            if (this.states.proximity && this.data.proximityClip) {
-              clipToPlay = this.data.proximityClip;
+            if (this.states.proximity && this.data.proximity) {
+              clipToPlay = this.data.proximity;
               newState = "proximity";
             }
             break;
           case "trigger":
-            if (this.states.trigger && this.data.triggerClip) {
-              clipToPlay = this.data.triggerClip;
+            if (this.states.trigger && this.data.trigger) {
+              clipToPlay = this.data.trigger;
               newState = "trigger";
             }
             break;
           case "click":
-            if (this.states.click && this.data.clickClip) {
-              clipToPlay = this.data.clickClip;
+            if (this.states.click && this.data.click) {
+              clipToPlay = this.data.click;
               newState = "click";
             }
             break;
           case "hover":
-            if (this.states.hover && this.data.hoverClip) {
-              clipToPlay = this.data.hoverClip;
+            if (this.states.hover && this.data.hover) {
+              clipToPlay = this.data.hover;
               newState = "hover";
             }
             break;
           case "focus":
-            if (this.states.focus && this.data.focusClip) {
-              clipToPlay = this.data.focusClip;
+            if (this.states.focus && this.data.focus) {
+              clipToPlay = this.data.focus;
               newState = "focus";
             } else if (
               !this.states.focus &&
-              this.data.blurClip &&
+              this.data.blur &&
               this.currentState === "focus"
             ) {
-              clipToPlay = this.data.blurClip;
+              clipToPlay = this.data.blur;
               newState = "blur";
             }
             break;
         }
 
-        if (newState !== "default") break;
+        if (newState !== "idle") break;
       }
 
       // Handle sequence/random mode
-      if (
-        newState === "default" &&
-        this.clipList.length > 0 &&
-        !this.data.defaultClip
-      ) {
+      if (newState === "idle" && this.clipList.length > 0 && !this.data.idle) {
         clipToPlay = this.clipList[this.currentClipIndex];
       }
 
@@ -498,28 +544,24 @@
 
     playAnimation: function (clipName, loopOverride) {
       if (!clipName) return;
-      if (clipName === this.currentClip && !loopOverride) return;
 
       this.currentClip = clipName;
-      this.log("Playing animation:", clipName);
+      var loopMode = loopOverride || this.data.loop;
 
-      var mixerSettings = {
+      this.log("playAnimation:", clipName, "loop:", loopMode);
+
+      // Single setAttribute call with object for better performance
+      this.el.setAttribute("animation-mixer", {
         clip: clipName,
-        loop: loopOverride || this.data.loop,
+        loop: loopMode,
         crossFadeDuration: this.data.crossFadeDuration,
         timeScale: this.data.timeScale,
-      };
-
-      if (this.data.clampWhenFinished) {
-        mixerSettings.clampWhenFinished = true;
-      }
-
-      this.el.setAttribute("animation-mixer", mixerSettings);
+      });
 
       this.el.emit("animation-changed", {
         clip: clipName,
         state: this.currentState,
-        loop: loopOverride || this.data.loop,
+        loop: loopMode,
       });
     },
 
@@ -569,6 +611,15 @@
     },
 
     update: function (oldData) {
+      // Parse and cache priorities when they change or on first run
+      if (!this._parsedPriorities || oldData.priority !== this.data.priority) {
+        this._parsedPriorities = this.data.priority
+          .split(",")
+          .map(function (s) {
+            return s.trim();
+          });
+      }
+
       if (
         oldData.enabled !== undefined &&
         oldData.enabled !== this.data.enabled
@@ -585,7 +636,7 @@
 
     log: function () {
       if (this.data.debug) {
-        var args = ["[animation-switcher]"].concat(
+        var args = ["[animation-trigger]"].concat(
           Array.prototype.slice.call(arguments)
         );
         console.log.apply(console, args);
@@ -601,8 +652,9 @@
   };
 
   // Register the main component
-  AFRAME.registerComponent("animation-switcher", componentDefinition);
+  AFRAME.registerComponent("animation-trigger", componentDefinition);
 
-  // Register legacy alias for backwards compatibility
+  // Register legacy aliases for backwards compatibility
+  AFRAME.registerComponent("animation-switcher", componentDefinition);
   AFRAME.registerComponent("animation-on-hover", componentDefinition);
 })();
