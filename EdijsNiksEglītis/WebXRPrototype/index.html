@@ -1,32 +1,205 @@
+<!DOCTYPE html>
 <html>
   <head>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-
-    <!--Event-Set Component-->
     <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
 
-    <!--navigation component used in ImGame -->
-    <script src="components/a-cursor-navigation.js"></script>
+    <!-- Custom component for buttons that face camera -->
+    <script>
+      AFRAME.registerComponent("look-at-camera", {
+        schema: {
+          enabled: { type: "boolean", default: true },
+        },
+
+        tick: function () {
+          if (!this.data.enabled) return;
+
+          const camera = document.querySelector("[camera]");
+          if (!camera) return;
+
+          const cameraPos = camera.object3D.getWorldPosition(
+            new THREE.Vector3()
+          );
+          const buttonPos = this.el.object3D.getWorldPosition(
+            new THREE.Vector3()
+          );
+
+          // Make button look at camera
+          this.el.object3D.lookAt(cameraPos);
+        },
+      });
+
+      // Component to bring button closer when gazed at
+      AFRAME.registerComponent("hover-scale-position", {
+        schema: {
+          hoverDistance: { type: "number", default: 1 },
+          normalScale: { type: "vec3", default: { x: 1, y: 1, z: 1 } },
+          hoverScale: { type: "vec3", default: { x: 2.5, y: 2.5, z: 2.5 } },
+        },
+
+        init: function () {
+          this.originalPosition = this.el.object3D.position.clone();
+
+          this.el.addEventListener("mouseenter", () => {
+            const camera = document.querySelector("[camera]");
+            if (!camera) return;
+
+            const cameraPos = camera.object3D.getWorldPosition(
+              new THREE.Vector3()
+            );
+            const buttonPos = this.el.object3D.getWorldPosition(
+              new THREE.Vector3()
+            );
+            const direction = new THREE.Vector3()
+              .subVectors(cameraPos, buttonPos)
+              .normalize();
+
+            // Move button towards camera
+            const newPos = this.originalPosition
+              .clone()
+              .add(direction.multiplyScalar(this.data.hoverDistance));
+
+            this.el.setAttribute("animation__position", {
+              property: "position",
+              to: `${newPos.x} ${newPos.y} ${newPos.z}`,
+              dur: 200,
+              easing: "easeOutQuad",
+            });
+
+            this.el.setAttribute("animation__scale", {
+              property: "scale",
+              to: `${this.data.hoverScale.x} ${this.data.hoverScale.y} ${this.data.hoverScale.z}`,
+              dur: 200,
+              easing: "easeOutQuad",
+            });
+          });
+
+          this.el.addEventListener("mouseleave", () => {
+            this.el.setAttribute("animation__position", {
+              property: "position",
+              to: `${this.originalPosition.x} ${this.originalPosition.y} ${this.originalPosition.z}`,
+              dur: 200,
+              easing: "easeOutQuad",
+            });
+
+            this.el.setAttribute("animation__scale", {
+              property: "scale",
+              to: `${this.data.normalScale.x} ${this.data.normalScale.y} ${this.data.normalScale.z}`,
+              dur: 200,
+              easing: "easeOutQuad",
+            });
+          });
+        },
+      });
+
+      // Custom shader for breathing orb effect
+      AFRAME.registerShader("breathing-orb", {
+        schema: {
+          color: { type: "color", default: "#81C784", is: "uniform" },
+          emissive: { type: "color", default: "#81C784", is: "uniform" },
+          intensity: { type: "number", default: 0.3, is: "uniform" },
+          timeMsec: { type: "time", is: "uniform" },
+        },
+
+        vertexShader: `
+          varying vec3 vNormal;
+          varying vec3 vPosition;
+          
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vPosition = position;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+
+        fragmentShader: `
+          uniform vec3 color;
+          uniform vec3 emissive;
+          uniform float intensity;
+          uniform float timeMsec;
+          
+          varying vec3 vNormal;
+          varying vec3 vPosition;
+          
+          void main() {
+            // Fresnel effect for glow
+            vec3 viewDirection = normalize(cameraPosition - vPosition);
+            float fresnel = pow(1.0 - dot(vNormal, viewDirection), 3.0);
+            
+            // Pulsing effect
+            float pulse = sin(timeMsec * 0.002) * 0.5 + 0.5;
+            
+            // Combine color with emissive glow
+            vec3 finalColor = color + emissive * intensity * (1.0 + fresnel * 2.0);
+            finalColor += vec3(pulse * 0.2);
+            
+            gl_FragColor = vec4(finalColor, 1.0);
+          }
+        `,
+      });
+    </script>
   </head>
   <body>
     <a-scene>
-      <assets>
-        <img id="sky" src="assets/forrest2-360.jpg" />
-        <img id="floor" src="assets/colorful-grass-texture-background.jpg" />
+      <a-assets>
+        <img id="sky" src="assets/forrest2-360.jpg" crossorigin="anonymous" />
+        <img
+          id="skyWinter"
+          src="assets/winterSky.jpg"
+          crossorigin="anonymous"
+        />
+        <img
+          id="floor"
+          src="assets/colorful-grass-texture-background.jpg"
+          crossorigin="anonymous"
+        />
+
+        <!-- AUDIO ASSETS -->
+        <audio
+          id="mainWorldMusic"
+          src="assets/forest-wind-with-birds-singing-364368.mp3"
+          preload="auto"
+        ></audio>
+        <audio
+          id="methodWorldMusic"
+          src="assets/forest-461593.mp3"
+          preload="auto"
+          loop
+        ></audio>
+        <audio
+          id="inhaleSound"
+          src="assets/longinhale-96120.mp3"
+          preload="auto"
+        ></audio>
+        <audio
+          id="exhaleSound"
+          src="assets/male-long-sigh-close-101781.mp3"
+          preload="auto"
+        ></audio>
 
         <a-asset-item id="Tree" src="objects/Trees.glb"></a-asset-item>
         <a-asset-item id="RockWall" src="objects/RockWall1.glb"></a-asset-item>
         <a-asset-item
+          id="TreeWinter"
+          src="objects/winterTree.glb"
+        ></a-asset-item>
+        <a-asset-item
+          id="floorWinter"
+          src="objects/floorWinter.glb"
+        ></a-asset-item>
+        <a-asset-item
           id="TreeStump"
           src="objects/Tree stump.glb"
         ></a-asset-item>
-      </assets>
+        <a-asset-item id="Tree5" src="objects/tree5.glb"></a-asset-item>
+        <a-asset-item id="Tree4" src="objects/tree4.glb"></a-asset-item>
+        <a-asset-item id="Tree7" src="objects/tree9.glb"></a-asset-item>
+      </a-assets>
 
+      <!-- MAIN WORLD -->
       <a-entity id="MainWorld" visible="true">
-        <!--Sky-->
         <a-sky src="#sky" position="0 150 0"></a-sky>
 
-        <!--Text for stump-->
         <a-entity
           position="0.63164 1.98724 -6.16996"
           text="color: black; value: Click the stump to start learning!"
@@ -34,25 +207,14 @@
           scale="3 5 2"
           id="textStump"
           visible="false"
-        >
-        </a-entity>
+        ></a-entity>
 
-        <!--Trees-->
         <a-entity
-          gltf-model="objects/Trees.glb"
-          position="7.94913 -0.1605 -11.2987"
+          gltf-model="#Tree7"
+          position="0 0 0"
           rotation="0 28.07378604582008 0"
         ></a-entity>
 
-        <!--Rocks-->
-        <a-entity
-          gltf-model="objects/RockWall1.glb"
-          position="-23.9814 -0.61499 -4.09926"
-          scale="2.20876 1 2.39374"
-          id="RockWall"
-        ></a-entity>
-
-        <!--Moving area-->
         <a-plane
           position="0 0 0"
           rotation="-90 0 0"
@@ -60,80 +222,575 @@
           height="50"
           material="src: #floor; repeat: 20 20; roughness: 1"
         ></a-plane>
+
+        <!-- STUMP - only visible in main world -->
+        <a-entity
+          gltf-model="objects/Tree stump.glb"
+          position="0.18961 0.00151 -7.16006"
+          rotation="0 28.07378604582008 0"
+          scale="0.30724 0.21055 0.31294"
+          id="Stump"
+          visible="true"
+          class="clickable"
+          event-set__enter="_event: mouseenter; _target: #textStump; visible: true"
+          event-set__leave="_event: mouseleave; _target: #textStump; visible: false"
+        ></a-entity>
+
+        <!-- Main world ambient music -->
+        <a-entity
+          id="mainWorldAudio"
+          sound="src: #mainWorldMusic; autoplay: false; loop: true; volume: 0.5"
+          position="0 0 0"
+        ></a-entity>
       </a-entity>
 
-      <!--Method world-->
-      <a-entity
-        id="methodWorld"
-        position="0.18961 0.00151 -7.16006"
-        scale="0 0 0"
-        event-set__click="_target: #methodWorld; scale: 1 1 1;dur: 1500; easing: easeInOutCirc;"
-        event-set__enter="_event: mouseenter; _target: #textStump; visible: true"
-        event-set__leave="_event: mouseleave; _target: #textStump; visible: false"
-      >
-        <!--Moving area-->
-        <a-plane
-          position="0 0 0"
-          rotation="-90 0 0"
+      <!-- METHOD WORLD - starts at camera position, scaled to 0 -->
+      <a-entity id="methodWorld" scale="0 0 0">
+        <a-entity
+          gltf-model="objects/floorWinter.glb"
+          position="-52.09625 -2.004 168.47214"
           width="50"
           height="50"
           color="#7BC8A4"
+          id="floorSnowModel"
+        ></a-entity>
+
+        <a-entity
+          gltf-model="#TreeWinter"
+          position="-52.09625 -2.004 168.47214"
+          width="50"
+          height="50"
+          color="#7BC8A4"
+          id="treeWinterModel"
+        ></a-entity>
+
+        <!-- CONTROL BUTTONS -->
+        <a-plane
+          id="btnStart"
+          position="-0.8 1 -1.5"
+          width="0.4"
+          height="0.2"
+          material="color: #4CAF50"
+          text="value: Start; align: center; color: white"
+          class="clickable"
+          look-at-camera
+          hover-scale-position="hoverDistance: 0.4"
+          event-set__enter="_event: mouseenter; material.color: #45a049"
+          event-set__leave="_event: mouseleave; material.color: #4CAF50"
         ></a-plane>
 
+        <a-plane
+          id="btnReset"
+          position="-0.2 1 -1.5"
+          width="0.4"
+          height="0.2"
+          material="color: #FFC107"
+          text="value: Reset; align: center; color: white"
+          class="clickable"
+          look-at-camera
+          hover-scale-position="hoverDistance: 0.4"
+          event-set__enter="_event: mouseenter; material.color: #e6a800"
+          event-set__leave="_event: mouseleave; material.color: #FFC107"
+        ></a-plane>
+
+        <a-plane
+          id="btnReload"
+          position="0.4 1 -1.5"
+          width="0.4"
+          height="0.2"
+          material="color: #2196F3"
+          text="value: Reload; align: center; color: white"
+          class="clickable"
+          look-at-camera
+          hover-scale-position="hoverDistance: 0.4"
+          event-set__enter="_event: mouseenter; material.color: #1976D2"
+          event-set__leave="_event: mouseleave; material.color: #2196F3"
+        ></a-plane>
+
+        <a-plane
+          id="btnExit"
+          position="1.0 1 -1.5"
+          width="0.4"
+          height="0.2"
+          material="color: #F44336"
+          text="value: Exit; align: center; color: white"
+          class="clickable"
+          look-at-camera
+          hover-scale-position="hoverDistance: 0.4"
+          event-set__enter="_event: mouseenter; material.color: #d32f2f"
+          event-set__leave="_event: mouseleave; material.color: #F44336"
+        ></a-plane>
+
+        <!-- INSTRUCTION PANEL -->
+        <a-plane
+          id="infoPanel"
+          visible="false"
+          position="1.6626 2.3718 -1.35306"
+          width="1.4"
+          height="0.8"
+          material="opacity: 0.75; color: #000"
+          look-at-camera
+          hover-scale-position="hoverDistance: 0.5"
+          class="clickable"
+        >
+          <a-text
+            value="This exercise guides slow breathing.\nInhale as the light expands.\nExhale as it contracts.\n\nClick OK to begin."
+            align="center"
+            color="#FFF"
+            width="1.3"
+            position="0 0.15 0.01"
+          ></a-text>
+
+          <a-plane
+            id="btnOk"
+            position="0 -0.25 0.01"
+            width="0.3"
+            height="0.15"
+            material="color: #4CAF50"
+            text="align: center; color: white; value: OK"
+            class="clickable"
+            event-set__enter="_event: mouseenter; material.color: #45a049; scale: 1.1 1.1 1.1"
+            event-set__leave="_event: mouseleave; material.color: #4CAF50; scale: 1 1 1"
+          ></a-plane>
+        </a-plane>
+
+        <!-- BREATHING ORB with custom shader -->
         <a-sphere
-          position="-2.60376 2.04632 -5"
-          radius="1.25"
-          color="#4CC3D9"
-          onclick="window.location.reload();"
-          event-set__enter="_event: mouseenter; color: grey"
-          event-set__leave="_event: mouseleave; color: #4CC3D9"
-          id="reset"
-          scale="0.5 0.5 0.5"
+          id="breathOrb"
+          position="0 2 -2"
+          radius="0.4"
+          material="shader: breathing-orb; color: #81C784; emissive: #81C784; intensity: 0.3"
+          class="clickable"
         ></a-sphere>
 
-        <a-entity
-          position="-2.26322 3.65604 -4.61667"
-          text="color: black; value: Click to reset experience!"
-          rotation="0 27.384517818277697 0"
-          scale="3 5 2"
-          id="textReset"
+        <!-- CONGRATS PANEL -->
+        <a-plane
+          id="congratsPanel"
+          visible="false"
+          position="-2.6702 1.72903 -1"
+          width="1.2"
+          height="0.6"
+          material="opacity: 0.8; color: #000"
+          look-at-camera
+          hover-scale-position="hoverDistance: 0.5"
+          class="clickable"
         >
-        </a-entity>
+          <a-text
+            value="Well done!\nYou completed the breathing exercise."
+            align="center"
+            color="#FFF"
+            width="1.1"
+            position="0 0.1 0.01"
+          ></a-text>
 
-        <a-sky color="green"></a-sky>
+          <a-plane
+            id="btnCongratsRepeat"
+            position="-0.25 -0.2 0.01"
+            width="0.35"
+            height="0.15"
+            material="color: #4CAF50"
+            text="align: center; color: white; value: Repeat"
+            class="clickable"
+            event-set__enter="_event: mouseenter; material.color: #45a049; scale: 1.1 1.1 1.1"
+            event-set__leave="_event: mouseleave; material.color: #4CAF50; scale: 1 1 1"
+          ></a-plane>
+
+          <a-plane
+            id="btnCongratsExit"
+            position="0.25 -0.2 0.01"
+            width="0.35"
+            height="0.15"
+            material="color: #F44336"
+            text="align: center; color: white; value: Exit"
+            class="clickable"
+            event-set__enter="_event: mouseenter; material.color: #d32f2f; scale: 1.1 1.1 1.1"
+            event-set__leave="_event: mouseleave; material.color: #F44336; scale: 1 1 1"
+          ></a-plane>
+        </a-plane>
+
+        <!-- Method world calm music -->
+        <a-entity
+          id="methodWorldAudio"
+          sound="src: #methodWorldMusic; autoplay: false; loop: true; volume: 0.5"
+          position="0 0 0"
+        ></a-entity>
+
+        <!-- Breathing sound effects -->
+        <a-entity id="breathingAudio" position="0 1.2 -2"></a-entity>
+
+        <a-sky src="#skyWinter"></a-sky>
       </a-entity>
 
-      <!--Stump-->
-      <a-entity
-        gltf-model="objects/Tree stump.glb"
-        position="0.18961 0.00151 -7.16006"
-        rotation="0 28.07378604582008 0"
-        scale="0.30724 0.21055 0.31294"
-        id="Stump"
-        visible="true"
-        event-set__enter="_event: mouseenter; _target: #textStump; visible: true"
-        event-set__leave="_event: mouseleave; _target: #textStump; visible: false"
-        event-set__show="_event: click; _target: #methodWorld; scale: 1 1 1;dur: 1500; easing: easeInOutCirc;"
-        event-set__hide="_event: click; _target: #MainWorld; scale: 0 0 0;dur: 1500; easing: easeInOutCirc;"
-      ></a-entity>
-
-      <!--Camera-->
-      <a-entity
-        position="0 0 -4.7027"
-        id="cameraRig"
-        movement-controls="speed: 1.01; enabled:false"
-        a-cursor-teleport="cameraHead: #head; cameraRig: #cameraRig"
-        rotation="0 0 0"
-      >
-        <a-entity
-          id="head"
-          position="0 1.6 0"
-          camera="near: 0.1"
-          look-controls=""
-        >
-          <a-cursor color="white" raycaster=""></a-cursor>
+      <!-- CAMERA RIG -->
+      <a-entity id="cameraRig" position="0 0 -4.7">
+        <a-entity id="head" position="0 1.6 0" camera look-controls>
+          <a-cursor
+            color="white"
+            raycaster="objects: .clickable"
+            fuse="true"
+            fuse-timeout="1500"
+          ></a-cursor>
         </a-entity>
       </a-entity>
     </a-scene>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        setTimeout(initApp, 1000);
+      });
+
+      function initApp() {
+        console.log("Initializing app...");
+
+        // Get all elements
+        const info = document.querySelector("#infoPanel");
+        const congrats = document.querySelector("#congratsPanel");
+        const orb = document.querySelector("#breathOrb");
+        const btnStart = document.querySelector("#btnStart");
+        const btnOk = document.querySelector("#btnOk");
+        const btnReset = document.querySelector("#btnReset");
+        const btnReload = document.querySelector("#btnReload");
+        const btnExit = document.querySelector("#btnExit");
+        const btnCongratsRepeat = document.querySelector("#btnCongratsRepeat");
+        const btnCongratsExit = document.querySelector("#btnCongratsExit");
+        const stump = document.querySelector("#Stump");
+        const mainWorld = document.querySelector("#MainWorld");
+        const methodWorld = document.querySelector("#methodWorld");
+
+        // Audio elements
+        const mainWorldAudio = document.querySelector("#mainWorldAudio");
+        const methodWorldAudio = document.querySelector("#methodWorldAudio");
+        const breathingAudioEntity = document.querySelector("#breathingAudio");
+
+        if (!orb || !info || !congrats) {
+          console.error("Critical elements not found!");
+          return;
+        }
+
+        let cycles = 0;
+        let active = false;
+        let interval;
+        let isInMethodWorld = false;
+        let audioInitialized = false;
+
+        // Initialize audio after a delay to ensure scene is ready
+        setTimeout(() => {
+          try {
+            if (mainWorldAudio && mainWorldAudio.components.sound) {
+              mainWorldAudio.components.sound.playSound();
+              audioInitialized = true;
+              console.log('Main world audio started');
+            }
+          } catch (e) {
+            console.error('Error starting main world audio:', e);
+          }
+        }, 2000);
+
+        // AUDIO CONTROL FUNCTIONS
+        function fadeAudio(audioEntity, targetVolume, duration) {
+          const soundComponent = audioEntity.components.sound;
+          if (!soundComponent) {
+            console.warn('Sound component not found');
+            return;
+          }
+          
+          // Check if sound is playing
+          if (!soundComponent.isPlaying) {
+            console.log('Sound not playing, skipping fade');
+            return;
+          }
+          
+          const currentVolume = soundComponent.data.volume;
+          const steps = 20;
+          const stepDuration = duration / steps;
+          const volumeStep = (targetVolume - currentVolume) / steps;
+          
+          let currentStep = 0;
+          const fadeInterval = setInterval(() => {
+            currentStep++;
+            const newVolume = Math.max(0, Math.min(1, currentVolume + (volumeStep * currentStep)));
+            
+            try {
+              audioEntity.setAttribute('sound', 'volume', newVolume);
+            } catch (e) {
+              console.error('Error setting volume:', e);
+              clearInterval(fadeInterval);
+            }
+            
+            if (currentStep >= steps) {
+              clearInterval(fadeInterval);
+              if (targetVolume === 0) {
+                try {
+                  soundComponent.pauseSound();
+                } catch (e) {
+                  console.error('Error pausing sound:', e);
+                }
+              }
+            }
+          }, stepDuration);
+        }
+
+        function playBreathSound(type) {
+          const soundSrc = type === "inhale" ? "#inhaleSound" : "#exhaleSound";
+          try {
+            breathingAudioEntity.setAttribute("sound", {
+              src: soundSrc,
+              autoplay: true,
+              loop: false,
+              volume: 0.7,
+            });
+          } catch (e) {
+            console.error('Error playing breath sound:', e);
+          }
+        }
+
+        // BREATHING FUNCTIONS
+        function inhale() {
+          console.log("Inhale");
+
+          // Scale animation
+          orb.setAttribute("animation", {
+            property: "scale",
+            to: "1.4 1.4 1.4",
+            dur: 6000,
+            easing: "easeInOutSine",
+          });
+
+          // Shader color change
+          orb.setAttribute("material", "color", "#FFD700");
+          orb.setAttribute("material", "emissive", "#FFD700");
+          orb.setAttribute("material", "intensity", "0.8");
+
+          // Play inhale sound
+          playBreathSound("inhale");
+
+          // Fade music down during inhale
+          fadeAudio(methodWorldAudio, 0.2, 6000);
+        }
+
+        function exhale() {
+          console.log("Exhale");
+
+          // Scale animation
+          orb.setAttribute("animation", {
+            property: "scale",
+            to: "1 1 1",
+            dur: 6000,
+            easing: "easeInOutSine",
+          });
+
+          // Shader color change back to normal
+          orb.setAttribute("material", "color", "#81C784");
+          orb.setAttribute("material", "emissive", "#81C784");
+          orb.setAttribute("material", "intensity", "0.3");
+
+          // Play exhale sound
+          playBreathSound("exhale");
+
+          // Fade music back up during exhale
+          fadeAudio(methodWorldAudio, 0.5, 6000);
+        }
+
+        function startBreathing() {
+          console.log("Starting breathing exercise");
+          if (active) return;
+
+          active = true;
+          cycles = 0;
+          info.setAttribute("visible", false);
+
+          // First cycle starts immediately
+          inhale();
+          setTimeout(() => {
+            exhale();
+            cycles++;
+          }, 6000);
+
+          // Remaining cycles
+          interval = setInterval(() => {
+            inhale();
+            setTimeout(() => {
+              exhale();
+              cycles++;
+
+              if (cycles >= 1) {
+                clearInterval(interval);
+                active = false;
+                interval = null;
+                console.log("Breathing exercise complete");
+
+                // Stop any ongoing animations and reset orb
+                setTimeout(() => {
+                  orb.removeAttribute("animation");
+                  orb.setAttribute("scale", "1 1 1");
+                  orb.setAttribute("material", "color", "#81C784");
+                  orb.setAttribute("material", "emissive", "#81C784");
+                  orb.setAttribute("material", "intensity", "0.3");
+                  congrats.setAttribute("visible", true);
+                }, 500);
+              }
+            }, 6000);
+          }, 12000);
+        }
+
+        function resetExercise() {
+          console.log("Resetting exercise");
+          if (interval) {
+            clearInterval(interval);
+            interval = null;
+          }
+          active = false;
+          cycles = 0;
+          orb.removeAttribute("animation");
+          orb.setAttribute("scale", "1 1 1");
+          orb.setAttribute("material", "color", "#81C784");
+          orb.setAttribute("material", "emissive", "#81C784");
+          orb.setAttribute("material", "intensity", "0.3");
+          info.setAttribute("visible", false);
+          congrats.setAttribute("visible", false);
+
+          // Reset music volume
+          fadeAudio(methodWorldAudio, 0.5, 500);
+        }
+
+        // WORLD TRANSITION FUNCTIONS
+        function transitionToMethodWorld() {
+          console.log('Transitioning to method world');
+          isInMethodWorld = true;
+
+          // Hide stump immediately
+          stump.setAttribute('visible', false);
+          
+          // Fade out main world music
+          if (mainWorldAudio && mainWorldAudio.components.sound && mainWorldAudio.components.sound.isPlaying) {
+            fadeAudio(mainWorldAudio, 0, 1500);
+          }
+          
+          // Scale up method world (overlaps and covers main world)
+          methodWorld.setAttribute('animation', {
+            property: 'scale',
+            from: '0 0 0',
+            to: '1 1 1',
+            dur: 1500,
+            easing: 'easeInOutCirc'
+          });
+
+          // After method world is visible, start its music and hide main world
+          setTimeout(() => {
+            mainWorld.setAttribute('visible', false);
+            
+            // Start method world music
+            try {
+              if (methodWorldAudio && methodWorldAudio.components.sound) {
+                methodWorldAudio.components.sound.playSound();
+                fadeAudio(methodWorldAudio, 0.5, 1000);
+                console.log('Method world audio started');
+              }
+            } catch (e) {
+              console.error('Error starting method world audio:', e);
+            }
+          }, 1500);
+        }
+
+        function transitionToMainWorld() {
+          console.log('Transitioning to main world');
+          isInMethodWorld = false;
+          resetExercise();
+
+          // Fade out method world music
+          if (methodWorldAudio && methodWorldAudio.components.sound && methodWorldAudio.components.sound.isPlaying) {
+            fadeAudio(methodWorldAudio, 0, 1500);
+          }
+
+          // Make main world visible but keep it hidden behind method world
+          mainWorld.setAttribute('visible', true);
+          
+          // Scale down method world (reveals main world underneath)
+          methodWorld.setAttribute('animation', {
+            property: 'scale',
+            from: '1 1 1',
+            to: '0 0 0',
+            dur: 1500,
+            easing: 'easeInOutCirc'
+          });
+
+          // After transition, restart main world music and show stump
+          setTimeout(() => {
+            stump.setAttribute('visible', true);
+            
+            // Restart main world music
+            try {
+              if (mainWorldAudio && mainWorldAudio.components.sound) {
+                mainWorldAudio.components.sound.playSound();
+                fadeAudio(mainWorldAudio, 0.5, 1000);
+                console.log('Main world audio restarted');
+              }
+            } catch (e) {
+              console.error('Error restarting main world audio:', e);
+            }
+          }, 1500);
+        }
+
+        // BUTTON EVENT LISTENERS
+        if (btnStart) {
+          btnStart.addEventListener("click", () => {
+            console.log("Start button clicked");
+            info.setAttribute("visible", true);
+          });
+        }
+
+        if (btnOk) {
+          btnOk.addEventListener("click", () => {
+            console.log("OK button clicked");
+            startBreathing();
+          });
+        }
+
+        if (btnReset) {
+          btnReset.addEventListener("click", () => {
+            console.log("Reset button clicked");
+            resetExercise();
+          });
+        }
+
+        if (btnReload) {
+          btnReload.addEventListener("click", () => {
+            console.log("Reload button clicked");
+            window.location.reload();
+          });
+        }
+
+        if (btnExit) {
+          btnExit.addEventListener("click", () => {
+            console.log("Exit button clicked");
+            transitionToMainWorld();
+          });
+        }
+
+        if (btnCongratsRepeat) {
+          btnCongratsRepeat.addEventListener("click", () => {
+            console.log("Congrats Repeat button clicked");
+            congrats.setAttribute("visible", false);
+            info.setAttribute("visible", true);
+          });
+        }
+
+        if (btnCongratsExit) {
+          btnCongratsExit.addEventListener("click", () => {
+            console.log("Congrats Exit button clicked");
+            transitionToMainWorld();
+          });
+        }
+
+        if (stump) {
+          stump.addEventListener("click", () => {
+            console.log("Stump clicked");
+            transitionToMethodWorld();
+          });
+        }
+
+        console.log('App initialized successfully');
+      }
+    </script>
   </body>
 </html>

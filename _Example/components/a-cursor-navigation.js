@@ -1,1272 +1,957 @@
 /**
- * A-CURSOR NAVIGATION COMPONENTS
- * ==============================
- * A-Frame teleportation system using the a-cursor for consistent navigation
- * in both desktop and VR modes.
- * 
- * COMPONENTS INCLUDED:
- * --------------------
- * 
- * 1. navmesh
- *    Marks a surface as teleportable. Add this attribute to any geometry
- *    where users should be able to teleport.
- * 
- *    Example:
- *    <a-plane navmesh position="0 0 0" rotation="-90 0 0" width="10" height="10"></a-plane>
- *    <a-entity navmesh gltf-model="#floor-model"></a-entity>
- * 
- * 
- * 2. raycast-exclude  
- *    Excludes an object from blocking teleportation. Objects with this
- *    attribute won't prevent teleporting to navmesh surfaces behind them.
- * 
- *    Example:
- *    <a-box raycast-exclude position="0 1 -3" material="opacity: 0.5"></a-box>
- * 
- * 
- * 3. a-cursor-teleport
- *    Main teleportation component. Attach to the camera rig entity.
- * 
- *    Schema Properties:
- *    - cameraRig: Selector for the camera rig entity (default: "")
- *    - cameraHead: Selector for the camera/head entity (default: "")  
- *    - landingMaxAngle: Max surface angle in degrees for valid landing (default: 45)
- *    - landingNormal: Expected up direction (default: {x:0, y:1, z:0})
- *    - transitionSpeed: Teleport animation speed (default: 0.0006)
- *    - cursorColor: Teleport indicator color (default: "#00ff00")
- *    - cursorOpacity: Teleport indicator opacity (default: 1)
- *    - alignToSurface: Align camera to surface normal (default: true)
- *    - rotationSmoothing: Rotation interpolation factor (default: 1.0)
- * 
- *    Basic Example:
- *    <a-entity id="cameraRig" a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
- *      <a-entity id="head" camera look-controls>
- *        <a-cursor></a-cursor>
- *      </a-entity>
- *    </a-entity>
- *    <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="10" height="10"></a-plane>
- * 
- *    Full Example with all options:
- *    <a-entity 
- *      id="cameraRig"
- *      a-cursor-teleport="
- *        cameraRig: #cameraRig; 
- *        cameraHead: #head;
- *        cursorColor: #00ff00;
- *        cursorOpacity: 0.8;
- *        landingMaxAngle: 30;
- *        transitionSpeed: 0.001">
- *      <a-entity id="head" position="0 1.6 0" camera look-controls>
- *        <a-cursor color="white"></a-cursor>
- *      </a-entity>
- *    </a-entity>
- * 
- * 
- * HOW IT WORKS:
- * -------------
- * - The a-cursor casts a ray from the center of the screen
- * - When hovering over a navmesh surface, a green ring indicator appears
- * - Clicking teleports the camera rig to that location
- * - Objects without raycast-exclude will block teleportation (occlusion)
- * - Works consistently in both desktop browser and VR headset modes
- * 
- * 
- * DEBUG MODE:
- * -----------
- * Add ?debug=true to URL to enable console logging for troubleshooting.
- * 
+ * A-CURSOR NAVIGATION v2.0
+ * A-Frame Teleportation System (Desktop + VR with hand tracking)
+ *
+ * QUICK START:
+ *   <a-camera a-cursor-teleport><a-cursor></a-cursor></a-camera>
+ *   <a-plane navmesh rotation="-90 0 0" width="20" height="20"></a-plane>
+ *
+ * WITH RIG (recommended):
+ *   <a-entity id="rig">
+ *     <a-camera a-cursor-teleport="cameraHeight: 0"><a-cursor></a-cursor></a-camera>
+ *   </a-entity>
+ *   <a-plane navmesh rotation="-90 0 0"></a-plane>
+ *
+ * GO-TO WAYPOINTS:
+ *   <a-sphere go-to="position: 5 0 -10; rotation: 0 90 0" position="5 1 -10"></a-sphere>
+ *
+ * COMPONENTS:
+ *   navmesh           - Mark as teleportable surface
+ *   raycast-exclude   - Ignore in teleport raycasts
+ *   a-cursor-teleport - Main teleport system (on camera)
+ *   go-to             - Click to navigate to position
+ *
+ * SETTINGS (a-cursor-teleport):
+ *   cameraHeight      : 1.6    - Height above navmesh (desktop without rig)
+ *   landingMaxAngle   : 360    - Max surface angle in degrees
+ *   transitionSpeed   : 0.0006 - Teleport animation speed
+ *   cursorColor       : #00ff00
+ *   cursorOpacity     : 0.8
+ *   dragThreshold     : 8      - Pixels before click becomes drag
+ *   alignToSurface    : true   - Tilt to match surface normal
+ *   rotationSmoothing : 1.0    - Rotation lerp factor (0-1)
+ *
+ * TUNNEL VIGNETTE (motion sickness reduction):
+ *   tunnelEnabled     : true   - Enable/disable vignette effect
+ *   tunnelRadius      : 0.4    - Inner clear vision radius (0-1)
+ *   tunnelSoftness    : 0.3    - Edge softness/gradient width
+ *   tunnelOpacity     : 0.95   - Max darkness of vignette (0-1)
+ *   tunnelColor       : #000000 - Vignette color
+ *   tunnelFadeIn      : 200    - Duration to close vignette (ms)
+ *   tunnelFadeOut     : 400    - Duration to open vignette (ms)
+ *
+ * SETTINGS (go-to):
+ *   position : vec3   - Target position
+ *   rotation : vec3   - Target rotation (degrees)
+ *   duration : 2000   - Animation duration (ms)
+ *   easing   : easeInOutQuad
+ *
+ * DEBUG: Add ?debug=true to URL
  */
 
-// Simple navmesh component - just marks an entity as a navigation mesh for teleportation
-AFRAME.registerComponent("navmesh", {
-    init() {
-        // Mark this entity as a navmesh for teleportation
-        this.el.object3D.traverse((obj) => {
-            if (obj.isMesh) {
-                obj.userData.collision = true;
-            }
-        });
-    }
-});
+(() => {
+  "use strict";
 
-// Exclude entity from raycast occlusion checking - objects with this won't block teleportation
-AFRAME.registerComponent("raycast-exclude", {
-    init() {
-        // Mark this entity to be excluded from occlusion raycasting
-        this.el.object3D.traverse((obj) => {
-            if (obj.isMesh) {
-                obj.userData.raycastExclude = true;
-            }
-        });
-    }
-});
+  // ============================================================================
+  // CONSTANTS
+  // ============================================================================
+  const DEFAULTS = {
+    CAMERA_HEIGHT: 1.6,
+    LANDING_MAX_ANGLE: 360,
+    TRANSITION_SPEED: 0.0006,
+    CURSOR_COLOR: "#00ff00",
+    CURSOR_OPACITY: 0.8,
+    DRAG_THRESHOLD: 8,
+    INDICATOR_INNER_RADIUS: 0.25,
+    INDICATOR_OUTER_RADIUS: 0.3,
+    INDICATOR_SEGMENTS: 32,
+    INDICATOR_Y_OFFSET: 0.02,
+    INDICATOR_LERP_FACTOR: 0.3,
+    CURSOR_RETRY_DELAY: 200,
+    SAVE_INTERVAL: 5000,
+    GO_TO_DURATION: 2000,
+    // Tunnel vignette settings for motion sickness reduction
+    TUNNEL_ENABLED: true,
+    TUNNEL_RADIUS: 0.15, // Inner radius of clear vision (0-1)
+    TUNNEL_SOFTNESS: 0.1, // Softness of vignette edge
+    TUNNEL_OPACITY: 1, // Max darkness of vignette
+    TUNNEL_COLOR: "#000000", // Vignette color
+    TUNNEL_FADE_IN: 200, // ms to close vignette
+    TUNNEL_FADE_OUT: 400, // ms to open vignette
+  };
 
-// Enhanced cursor-teleport component that shows cursor when hovering over valid teleport locations
-AFRAME.registerComponent("a-cursor-teleport", {
+  // ============================================================================
+  // SHARED UTILITIES
+  // ============================================================================
+  const isDebug = () => location.search.includes("debug=true");
+
+  const createLogger = (prefix) => {
+    const enabled = isDebug();
+    return (...args) => enabled && console.log(prefix, ...args);
+  };
+
+  const easeInOutQuad = (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t);
+
+  // Factory for navmesh/raycast-exclude style components
+  const createMeshMarkerComponent = (userDataKey, userDataValue = true) => ({
+    init() {
+      this._markMeshes = () => {
+        this.el.object3D.traverse((obj) => {
+          if (obj.isMesh) obj.userData[userDataKey] = userDataValue;
+        });
+      };
+      this._markMeshes();
+      this.el.addEventListener("model-loaded", this._markMeshes);
+    },
+    remove() {
+      this.el.removeEventListener("model-loaded", this._markMeshes);
+    },
+  });
+
+  // ============================================================================
+  // NAVMESH COMPONENT
+  // ============================================================================
+  AFRAME.registerComponent("navmesh", {
+    ...createMeshMarkerComponent("isNavmesh"),
+    init() {
+      this._markMeshes = () => {
+        this.el.object3D.traverse((obj) => {
+          if (obj.isMesh) {
+            obj.userData.isNavmesh = true;
+            obj.userData.collision = true;
+          }
+        });
+      };
+      this._markMeshes();
+      this.el.addEventListener("model-loaded", this._markMeshes);
+    },
+  });
+
+  // ============================================================================
+  // RAYCAST-EXCLUDE COMPONENT
+  // ============================================================================
+  AFRAME.registerComponent(
+    "raycast-exclude",
+    createMeshMarkerComponent("raycastExclude")
+  );
+
+  // ============================================================================
+  // A-CURSOR-TELEPORT COMPONENT
+  // ============================================================================
+  AFRAME.registerComponent("a-cursor-teleport", {
     schema: {
-        cameraHead: { type: "selector", default: "" },
-        cameraRig: { type: "selector", default: "" },
-        collisionEntities: { type: "string", default: "[navmesh]" },
-        ignoreEntities: { type: "string", default: "" },
-        landingMaxAngle: { default: 45, min: 0, max: 360 },
-        landingNormal: { type: "vec3", default: { x: 0, y: 1, z: 0 } },
-        transitionSpeed: { type: "number", default: 0.0006 },
-        cursorColor: { type: "color", default: "#00ff00" },
-        cursorOpacity: { type: "number", default: 1 },
-        alignToSurface: { type: "boolean", default: true },
-        rotationSmoothing: { type: "number", default: 1.0 }
+      cameraHeight: { type: "number", default: DEFAULTS.CAMERA_HEIGHT },
+      landingMaxAngle: { type: "number", default: DEFAULTS.LANDING_MAX_ANGLE },
+      transitionSpeed: { type: "number", default: DEFAULTS.TRANSITION_SPEED },
+      cursorColor: { type: "color", default: DEFAULTS.CURSOR_COLOR },
+      cursorOpacity: { type: "number", default: DEFAULTS.CURSOR_OPACITY },
+      dragThreshold: { type: "number", default: DEFAULTS.DRAG_THRESHOLD },
+      alignToSurface: { type: "boolean", default: true },
+      rotationSmoothing: { type: "number", default: 1.0 },
+      // Tunnel vignette for motion sickness reduction
+      tunnelEnabled: { type: "boolean", default: DEFAULTS.TUNNEL_ENABLED },
+      tunnelRadius: { type: "number", default: DEFAULTS.TUNNEL_RADIUS },
+      tunnelSoftness: { type: "number", default: DEFAULTS.TUNNEL_SOFTNESS },
+      tunnelOpacity: { type: "number", default: DEFAULTS.TUNNEL_OPACITY },
+      tunnelColor: { type: "color", default: DEFAULTS.TUNNEL_COLOR },
+      tunnelFadeIn: { type: "number", default: DEFAULTS.TUNNEL_FADE_IN },
+      tunnelFadeOut: { type: "number", default: DEFAULTS.TUNNEL_FADE_OUT },
     },
 
     init() {
-        // Performance: Only log in debug mode
-        this.debugMode = window.location.search.includes('debug=true');
-        if (this.debugMode) console.log("navigation-05: Initializing cursor-teleport component");
-        
-        this.mobile = AFRAME.utils.device.isMobile() || AFRAME.utils.device.isMobileDeviceRequestingDesktopSite();
+      this.log = createLogger("[teleport]");
+      this.log("Initializing");
+
+      // State
+      this.isVR = false;
+      this.transitioning = false;
+      this.transitionProgress = 0;
+      this.isDragging = false;
+      this.aligningRotation = false;
+
+      // References
+      this.cameraEl = this.el;
+      this.rigEl = null;
+      this.moveTarget = null;
+      this.cursorEl = null;
+      this.cursorRaycaster = null;
+      this.tunnelEl = null;
+
+      // Tunnel vignette state
+      this.vignette = null;
+      this.vignetteIntensity = 0;
+      this.vignetteTargetIntensity = 0;
+      this.vignetteFadeSpeed = 0;
+
+      // Cached navmesh objects for faster raycasting
+      this._navmeshCache = [];
+      this._navmeshCacheDirty = true;
+
+      // Pre-allocated THREE.js objects (reused to avoid GC)
+      this._vec3 = {
+        start: new THREE.Vector3(),
+        end: new THREE.Vector3(),
+        up: new THREE.Vector3(0, 1, 0),
+        temp: new THREE.Vector3(),
+        currentNormal: new THREE.Vector3(0, 1, 0),
+        targetNormal: new THREE.Vector3(0, 1, 0),
+      };
+      this._quat = {
+        start: new THREE.Quaternion(),
+        end: new THREE.Quaternion(),
+        temp: new THREE.Quaternion(),
+      };
+      this._mat3 = new THREE.Matrix3();
+
+      this._setupCameraRig();
+      this._createIndicator();
+      this._createVignette();
+      this._setupVRListeners();
+      this._setupNavmeshObserver();
+
+      if (this.el.sceneEl.hasLoaded) {
+        this._setupCursor();
+        this._setupDragDetection();
+      } else {
+        this.el.sceneEl.addEventListener(
+          "loaded",
+          () => {
+            this._setupCursor();
+            this._setupDragDetection();
+          },
+          { once: true }
+        );
+      }
+    },
+
+    _setupNavmeshObserver() {
+      // Invalidate cache when DOM changes
+      this._observer = new MutationObserver(() => {
+        this._navmeshCacheDirty = true;
+      });
+      this._observer.observe(this.el.sceneEl, {
+        childList: true,
+        subtree: true,
+      });
+    },
+
+    _updateNavmeshCache() {
+      if (!this._navmeshCacheDirty) return;
+
+      this._navmeshCache.length = 0;
+      this.el.sceneEl.object3D.traverse((obj) => {
+        if (obj.isMesh && obj.visible && !obj.userData.raycastExclude) {
+          this._navmeshCache.push(obj);
+        }
+      });
+      this._navmeshCacheDirty = false;
+    },
+
+    _createIndicator() {
+      const geo = new THREE.RingGeometry(
+        DEFAULTS.INDICATOR_INNER_RADIUS,
+        DEFAULTS.INDICATOR_OUTER_RADIUS,
+        DEFAULTS.INDICATOR_SEGMENTS
+      );
+      geo.rotateX(-Math.PI / 2);
+      geo.translate(0, DEFAULTS.INDICATOR_Y_OFFSET, 0);
+
+      this.indicator = new THREE.Mesh(
+        geo,
+        new THREE.MeshBasicMaterial({
+          color: this.data.cursorColor,
+          transparent: true,
+          opacity: this.data.cursorOpacity,
+        })
+      );
+      this.indicator.visible = false;
+      this.el.sceneEl.object3D.add(this.indicator);
+    },
+
+    _createVignette() {
+      if (!this.data.tunnelEnabled) return;
+
+      // Vignette shader material for tunnel vision effect
+      const vignetteShader = {
+        uniforms: {
+          intensity: { value: 0.0 },
+          radius: { value: this.data.tunnelRadius },
+          softness: { value: this.data.tunnelSoftness },
+          color: { value: new THREE.Color(this.data.tunnelColor) },
+          opacity: { value: this.data.tunnelOpacity },
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float intensity;
+          uniform float radius;
+          uniform float softness;
+          uniform vec3 color;
+          uniform float opacity;
+          varying vec2 vUv;
+          
+          void main() {
+            vec2 center = vec2(0.5, 0.5);
+            float dist = distance(vUv, center) * 2.0;
+            
+            // Create vignette with adjustable radius and softness
+            float innerRadius = radius;
+            float outerRadius = radius + softness;
+            float vignette = smoothstep(innerRadius, outerRadius, dist);
+            
+            // Apply intensity (0 = no effect, 1 = full effect)
+            float alpha = vignette * intensity * opacity;
+            
+            gl_FragColor = vec4(color, alpha);
+          }
+        `,
+      };
+
+      // Create a plane that sits in front of the camera
+      const geometry = new THREE.PlaneGeometry(2, 2);
+      const material = new THREE.ShaderMaterial({
+        uniforms: vignetteShader.uniforms,
+        vertexShader: vignetteShader.vertexShader,
+        fragmentShader: vignetteShader.fragmentShader,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      });
+
+      this.vignette = new THREE.Mesh(geometry, material);
+      this.vignette.frustumCulled = false;
+      this.vignette.renderOrder = 9999;
+      this.vignette.visible = false; // Start hidden
+
+      // Position it close to the camera - will be adjusted when camera is ready
+      this.vignette.position.set(0, 0, -0.15);
+      this.vignette.scale.set(0.25, 0.25, 1);
+
+      // Find the actual camera object and attach vignette to it
+      this._attachVignetteToCamera();
+    },
+
+    _attachVignetteToCamera() {
+      // Try to find the camera - it might be this element or a child
+      const findCamera = () => {
+        // Check if this element has a camera
+        if (this.el.sceneEl.camera) {
+          const cameraObject = this.el.sceneEl.camera;
+          cameraObject.add(this.vignette);
+          this.log("Tunnel vignette attached to scene camera");
+          return true;
+        }
+        return false;
+      };
+
+      if (!findCamera()) {
+        // Camera not ready yet, wait for it
+        this.el.sceneEl.addEventListener(
+          "camera-set-active",
+          () => {
+            findCamera();
+          },
+          { once: true }
+        );
+      }
+    },
+
+    _setupCameraRig() {
+      const parent = this.cameraEl.parentElement;
+
+      if (parent && parent !== this.el.sceneEl && parent.hasAttribute("id")) {
+        this.rigEl = parent;
+        this.log("Using existing rig:", parent.id);
+      } else {
+        this.rigEl = document.createElement("a-entity");
+        this.rigEl.setAttribute("id", "camera-rig-auto");
+        this.rigEl.setAttribute("position", "0 0 0");
+        this.cameraEl.parentElement.insertBefore(this.rigEl, this.cameraEl);
+        this.rigEl.appendChild(this.cameraEl);
+        this.log("Created camera rig");
+      }
+    },
+
+    _setupCursor() {
+      this.cursorEl = this.el.sceneEl.querySelector("a-cursor");
+
+      if (!this.cursorEl?.components?.raycaster?.raycaster) {
+        this.log("Cursor not ready, retrying...");
+        setTimeout(() => this._setupCursor(), DEFAULTS.CURSOR_RETRY_DELAY);
+        return;
+      }
+
+      this.cursorRaycaster = this.cursorEl.components.raycaster;
+      this._handleClick = () => {
+        if (this.isDragging && !this.isVR) return;
+        const hit = this._getValidHit();
+        if (hit) this._teleportTo(hit.point, hit.normal);
+      };
+      this.cursorEl.addEventListener("click", this._handleClick);
+      this.log("Cursor ready");
+    },
+
+    _setupVRListeners() {
+      const scene = this.el.sceneEl;
+      scene.addEventListener("enter-vr", () => {
+        this.isVR = true;
+        this.tunnelEl = this.tunnelEl || scene.querySelector("#tunnel");
+        if (this.tunnelEl) {
+          this.tunnelEl.removeAttribute("animation__tunnel_down");
+          this.tunnelEl.removeAttribute("animation__tunnel_up");
+          this.tunnelEl.setAttribute("scale", "1 0.1 1");
+          this.tunnelEl.setAttribute("visible", "true");
+        }
+      });
+      scene.addEventListener("exit-vr", () => {
         this.isVR = false;
-        const sceneEl = this.el.sceneEl;
-        this.canvas = sceneEl.renderer.domElement;
-        
-        // Check for VR mode once during initialization
-        this.checkVRMode();
-        
-        // Listen for VR session changes
-        this.setupVRSessionListeners();
-        
-        // Cache camera reference
-        this.initializeCamera();
-        
-        // Initialize reusable objects to prevent garbage collection
-        this.initializeReusableObjects();
-        
-        // Performance optimization: Cache teleport position results
-        this.lastTeleportCheck = 0;
-        this.cachedTeleportPos = null;
-        this.teleportCheckInterval = 16; // ~60fps
+      });
+    },
 
-        // Performance monitoring (only in debug mode)
-        if (this.debugMode) {
-            this.perfStats = {
-                raycastCount: 0,
-                lastPerfReport: 0,
-                avgFrameTime: 0
-            };
+    _setupDragDetection() {
+      const canvas = this.el.sceneEl.canvas;
+      if (!canvas) return;
+
+      let startX, startY;
+      const threshold = this.data.dragThreshold;
+
+      this._onMouseDown = (e) => {
+        startX = e.clientX;
+        startY = e.clientY;
+        this.isDragging = false;
+      };
+
+      this._onMouseMove = (e) => {
+        if (startX === undefined) return;
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) > threshold) {
+          this.isDragging = true;
         }
+      };
 
-        // Create teleport indicator once
-        this.createTeleportIndicator();
+      this._onMouseUp = () => {
+        setTimeout(() => (this.isDragging = false), 0);
+        startX = startY = undefined;
+      };
 
-        // Initialize VR properties
-        this.vrCursorInitialized = false;
-        this.vrCursorClickHandler = null;
-        this.vrTransitionReady = false;
-
-        // Mouse tracking (reused objects)
-        this.mousePosition = { x: 0, y: 0 };
-        this.mouseOriginalPosition = { x: 0, y: 0 };
-
-        // Bind methods once
-        this.bindMethods();
-
-        // Initialize raycast objects
-        this.updateRaycastObjects();
-
-        // Set up cursor (works for both VR and desktop)
-        this.setupCursor();
+      canvas.addEventListener("mousedown", this._onMouseDown);
+      canvas.addEventListener("mousemove", this._onMouseMove);
+      canvas.addEventListener("mouseup", this._onMouseUp);
     },
 
-    initializeCamera() {
-        // Find camera once and cache it
-        this.data.cameraHead.object3D.traverse((obj) => {
-            if (obj instanceof THREE.Camera) {
-                this.cam = obj;
-                if (this.debugMode) console.log("navigation-05: Camera found");
-                return; // Stop traversing once found
-            }
+    _getValidHit() {
+      const raycaster = this.cursorRaycaster?.raycaster;
+      if (!raycaster) return null;
+
+      this._updateNavmeshCache();
+      const hits = raycaster.intersectObjects(this._navmeshCache, true);
+      if (!hits.length) return null;
+
+      const hit = hits[0];
+      if (!hit.object.userData.isNavmesh || !hit.face) return null;
+
+      // Check surface angle
+      this._mat3.getNormalMatrix(hit.object.matrixWorld);
+      const worldNormal = this._vec3.temp
+        .copy(hit.face.normal)
+        .applyMatrix3(this._mat3)
+        .normalize();
+
+      const angle = THREE.MathUtils.radToDeg(
+        this._vec3.up.angleTo(worldNormal)
+      );
+      if (angle > this.data.landingMaxAngle) return null;
+
+      return { point: hit.point, normal: worldNormal.clone() };
+    },
+
+    _teleportTo(point, normal) {
+      const moveTarget = this.rigEl?.object3D || this.cameraEl.object3D;
+      if (!moveTarget) return;
+
+      this.moveTarget = moveTarget;
+      this._vec3.start.copy(moveTarget.position);
+
+      // In VR, headset provides height; in desktop with rig, camera offset handles it
+      const addHeight = !this.isVR && !this.rigEl;
+      const targetY = addHeight ? point.y + this.data.cameraHeight : point.y;
+      this._vec3.end.set(point.x, targetY, point.z);
+
+      // Setup rotation alignment
+      this.aligningRotation = false;
+      if (this.data.alignToSurface && normal && this.rigEl) {
+        this.aligningRotation = true;
+        this._quat.start.copy(moveTarget.quaternion);
+        this._quat.end.setFromUnitVectors(this._vec3.up, normal);
+        this._vec3.currentNormal.set(0, 1, 0);
+        this._vec3.targetNormal.copy(normal);
+      }
+
+      this.transitionProgress = 0;
+      this.transitioning = true;
+      this.el.emit("navigation-start");
+
+      // Trigger tunnel vignette fade in (VR only - reduces motion sickness)
+      if (this.isVR && this.data.tunnelEnabled && this.vignette) {
+        this.vignetteTargetIntensity = 1.0;
+        this.vignetteFadeSpeed = 1.0 / (this.data.tunnelFadeIn / 1000);
+      }
+
+      // Legacy VR tunnel animation (if tunnel element exists)
+      if (this.isVR && this.tunnelEl) {
+        this.tunnelEl.removeAttribute("animation__tunnel_down");
+        this.tunnelEl.setAttribute("animation__tunnel_down", {
+          property: "scale.y",
+          to: -1,
+          dur: 250,
+          easing: "easeInQuad",
         });
-        this.camRig = this.data.cameraRig.object3D;
+      }
+
+      this.log(
+        "Teleporting:",
+        this._vec3.end
+          .toArray()
+          .map((n) => n.toFixed(2))
+          .join(", ")
+      );
     },
 
-    initializeReusableObjects() {
-        // Pre-allocate all reusable objects to prevent garbage collection
-        this.rayCaster = new THREE.Raycaster();
-        this.collisionObjectNormalMatrix = new THREE.Matrix3();
-        this.collisionWorldNormal = new THREE.Vector3();
-        this.referenceNormal = new THREE.Vector3();
-        this.rayCastObjects = [];
-        this.referenceNormal.copy(this.data.landingNormal);
+    tick(time, delta) {
+      // Update vignette intensity
+      this._updateVignette(delta);
 
-        // Transition properties (reusable objects)
-        this.transitioning = false;
-        this.transitionProgress = 0;
-        this.transitionCamPosStart = new THREE.Vector3();
-        this.transitionCamPosEnd = new THREE.Vector3();
-        this.transitionRotStart = new THREE.Quaternion();
-        this.transitionRotEnd = new THREE.Quaternion();
-        this.currentSurfaceNormal = new THREE.Vector3(0, 1, 0);
-        this.targetSurfaceNormal = new THREE.Vector3(0, 1, 0);
+      if (!this.transitioning) {
+        this._updateIndicator();
+        return;
+      }
 
-        // Pre-allocate temporary objects for calculations
-        this.tempVector3 = new THREE.Vector3();
-        this.tempVector3_2 = new THREE.Vector3();
-        this.tempQuaternion = new THREE.Quaternion();
-        this.teleportQuaternion = new THREE.Quaternion();
-        this.upVector = new THREE.Vector3(0, 1, 0);
-        this.ndcMouse = new THREE.Vector2();
+      this.transitionProgress += delta * this.data.transitionSpeed;
+      const t = Math.min(this.transitionProgress, 1);
+      const eased = easeInOutQuad(t);
 
-        // Initialize counters
-        this.lastCollisionCount = 0;
-        this.lastRaycastCount = 0;
+      // Position
+      this.moveTarget.position.lerpVectors(
+        this._vec3.start,
+        this._vec3.end,
+        eased
+      );
+
+      // Rotation
+      if (this.aligningRotation) {
+        const rotT = Math.min(eased * this.data.rotationSmoothing, 1);
+        this.moveTarget.quaternion.slerpQuaternions(
+          this._quat.start,
+          this._quat.end,
+          rotT
+        );
+      }
+
+      if (t >= 1) {
+        this._finishTransition();
+      }
     },
 
-    createTeleportIndicator() {
-        const ringGeometry = new THREE.RingGeometry(0.25, 0.3, 32, 1);
-        ringGeometry.rotateX(-Math.PI / 2);
-        ringGeometry.translate(0, 0.02, 0);
-        
-        const ringMaterial = new THREE.MeshBasicMaterial({
-            color: this.data.cursorColor,
-            transparent: true,
-            opacity: this.data.cursorOpacity
+    _updateIndicator() {
+      const hit = this._getValidHit();
+      const wasHidden = !this.indicator.visible;
+      this.indicator.visible = !!hit;
+
+      if (!hit) return;
+
+      if (wasHidden) {
+        this.indicator.position.copy(hit.point);
+      } else {
+        this.indicator.position.lerp(hit.point, DEFAULTS.INDICATOR_LERP_FACTOR);
+      }
+
+      if (this.data.alignToSurface && hit.normal) {
+        this._quat.temp.setFromUnitVectors(this._vec3.up, hit.normal);
+        this.indicator.quaternion.slerp(
+          this._quat.temp,
+          DEFAULTS.INDICATOR_LERP_FACTOR
+        );
+      }
+    },
+
+    _finishTransition() {
+      this.transitioning = false;
+      this.moveTarget.position.copy(this._vec3.end);
+
+      if (this.aligningRotation) {
+        this.moveTarget.quaternion.copy(this._quat.end);
+        this._vec3.currentNormal.copy(this._vec3.targetNormal);
+        this.aligningRotation = false;
+      }
+
+      this.el.emit("navigation-end");
+
+      // Trigger tunnel vignette fade out (VR only)
+      if (this.isVR && this.data.tunnelEnabled && this.vignette) {
+        this.vignetteTargetIntensity = 0.0;
+        this.vignetteFadeSpeed = 1.0 / (this.data.tunnelFadeOut / 1000);
+      }
+
+      // Legacy VR tunnel animation
+      if (this.isVR && this.tunnelEl) {
+        this.tunnelEl.removeAttribute("animation__tunnel_up");
+        this.tunnelEl.setAttribute("animation__tunnel_up", {
+          property: "scale.y",
+          to: -0.1,
+          dur: 500,
+          easing: "easeOutQuad",
         });
-        
-        this.teleportIndicator = new THREE.Mesh(ringGeometry, ringMaterial);
-        this.teleportIndicator.visible = false;
-        this.el.sceneEl.object3D.add(this.teleportIndicator);
-        
-        if (this.debugMode) console.log("navigation-05: Teleport indicator created");
+      }
     },
 
-    bindMethods() {
-        // Bind all methods once to prevent repeated binding
-        this.updateRaycastObjects = this.updateRaycastObjects.bind(this);
-        this.getMouseState = this.getMouseState.bind(this);
-        this.getTeleportPosition = this.getTeleportPosition.bind(this);
-        this.getTeleportPositionVR = this.getTeleportPositionVR.bind(this);
-        this.isValidNormalsAngle = this.isValidNormalsAngle.bind(this);
-        this.transition = this.transition.bind(this);
-        this.triggerTunnelAnimation = this.triggerTunnelAnimation.bind(this);
-        this.triggerTunnelUpAnimation = this.triggerTunnelUpAnimation.bind(this);
-        this.mouseMove = this.mouseMove.bind(this);
-        this.mouseDown = this.mouseDown.bind(this);
-        this.mouseUp = this.mouseUp.bind(this);
-        this.easeInOutQuad = this.easeInOutQuad.bind(this);
-        this.hideCursor = this.hideCursor.bind(this);
-        this.checkVRMode = this.checkVRMode.bind(this);
-        this.setupVRSessionListeners = this.setupVRSessionListeners.bind(this);
-    },
+    _updateVignette(delta) {
+      if (!this.vignette || !this.data.tunnelEnabled) return;
 
-    checkVRMode() {
-        // Optimized VR mode detection
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlVRMode = urlParams.get('vr') === 'true';
-        
-        let sessionVRMode = false;
-        if (this.el.sceneEl.xr && this.el.sceneEl.xr.isPresenting) {
-            sessionVRMode = true;
-        }
-        
-        const previousVRMode = this.isVR;
-        this.isVR = urlVRMode || sessionVRMode;
-        
-        // Only log when VR mode actually changes
-        if (this.debugMode && previousVRMode !== this.isVR) {
-            console.log("navigation-05: VR Mode changed - Final:", this.isVR);
-        }
-    },
+      const deltaSeconds = delta / 1000;
 
-    setupVRSessionListeners() {
-        // Optimized VR session listeners with immediate response
-        this.el.sceneEl.addEventListener('enter-vr', () => {
-            if (this.debugMode) console.log("navigation-05: Entered VR session");
-            this.isVR = true;
-            this.transitioning = false;
-            this.transitionProgress = 0;
-            
-            // Immediate initialization without timeouts
-            this.initializeTunnelForVR();
-            this.setupVRCursor();
-            this.vrTransitionReady = true;
-        });
-        
-        this.el.sceneEl.addEventListener('exit-vr', () => {
-            if (this.debugMode) console.log("navigation-05: Exited VR session");
-            this.isVR = false;
-        });
+      // Animate intensity toward target
+      if (this.vignetteIntensity !== this.vignetteTargetIntensity) {
+        const diff = this.vignetteTargetIntensity - this.vignetteIntensity;
+        const step = this.vignetteFadeSpeed * deltaSeconds;
 
-        // Optimized visibility change handler
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && this.isVR && (!this.vrCursor || !this.vrRaycaster)) {
-                if (this.debugMode) console.log("navigation-05: Re-initializing VR cursor on tab focus");
-                this.setupVRCursor();
-            }
-        });
-    },
-
-    initializeTunnelForVR() {
-        // Cache tunnel element for better performance
-        if (!this.tunnelElement) {
-            this.tunnelElement = this.el.sceneEl.querySelector("#tunnel");
-        }
-        
-        if (this.tunnelElement) {
-            // Immediate tunnel state reset
-            this.tunnelElement.removeAttribute("animation__tunnel_down");
-            this.tunnelElement.removeAttribute("animation__tunnel_up");
-            this.tunnelElement.removeAttribute("animation__down");
-            this.tunnelElement.removeAttribute("animation__up");
-            this.tunnelElement.setAttribute("scale", "1 0.1 1");
-            this.tunnelElement.setAttribute("visible", "true");
-            
-            if (this.debugMode) console.log("navigation-05: Tunnel initialized for VR");
-        }
-        
-        this.vrTransitionReady = true;
-    },
-
-    setupCursor() {
-        // Unified cursor setup - works for both VR and desktop
-        this.cursorEl = this.el.sceneEl.querySelector('a-cursor');
-        
-        if (this.cursorEl && this.cursorEl.components.raycaster && this.cursorEl.components.raycaster.raycaster) {
-            this.cursorRaycaster = this.cursorEl.components.raycaster;
-            
-            // Remove existing listener to prevent duplicates
-            if (this.cursorClickHandler) {
-                this.cursorEl.removeEventListener('click', this.cursorClickHandler);
-            }
-            
-            // Create unified click handler for both VR and desktop
-            this.cursorClickHandler = (event) => {
-                if (this.debugMode) console.log("navigation-05: Cursor click (VR:", this.isVR, ")");
-                
-                const teleportData = this.getTeleportPositionFromCursor();
-                if (teleportData) {
-                    this.teleportIndicator.position.copy(teleportData.point);
-                    
-                    let targetQuaternion = null;
-                    if (this.data.alignToSurface && teleportData.normal) {
-                        this.teleportQuaternion.setFromUnitVectors(this.upVector, teleportData.normal);
-                        targetQuaternion = this.teleportQuaternion.clone();
-                    }
-                    
-                    this.transition(teleportData, targetQuaternion);
-                }
-            };
-            
-            this.cursorEl.addEventListener('click', this.cursorClickHandler);
-            this.cursorInitialized = true;
-            
-            if (this.debugMode) console.log("navigation-05: Cursor setup completed");
+        if (Math.abs(diff) <= step) {
+          this.vignetteIntensity = this.vignetteTargetIntensity;
         } else {
-            // Single retry with short delay
-            if (!this.cursorSetupRetried) {
-                this.cursorSetupRetried = true;
-                setTimeout(() => this.setupCursor(), 200);
-            } else if (this.debugMode) {
-                console.warn("navigation-05: Cursor setup failed after retry");
-            }
+          this.vignetteIntensity += Math.sign(diff) * step;
         }
+
+        // Update shader uniform
+        this.vignette.material.uniforms.intensity.value =
+          this.vignetteIntensity;
+      }
+
+      // Show/hide vignette based on intensity
+      this.vignette.visible = this.vignetteIntensity > 0.001;
     },
 
-    // Keep old method name as alias for backwards compatibility
-    setupVRCursor() {
-        this.setupCursor();
-    },
-
-    updateRaycastObjects() {
-        const previousCount = this.rayCastObjects.length;
-        this.rayCastObjects.length = 0;
-        
-        // Collect ALL scene meshes for occlusion checking (excluding marked objects)
-        this.allSceneMeshes = [];
-        this.el.sceneEl.object3D.traverse((obj) => {
-            if (obj.isMesh && obj.visible && !obj.userData.raycastExclude) {
-                this.allSceneMeshes.push(obj);
-            }
-        });
-        
-        if (this.data.collisionEntities !== "") {
-            const collisionEntities = this.el.sceneEl.querySelectorAll(this.data.collisionEntities);
-            
-            // Only log changes for debugging
-            if (this.debugMode && collisionEntities.length !== this.lastCollisionCount) {
-                console.log("navigation-05: Collision entities count:", collisionEntities.length);
-            }
-            this.lastCollisionCount = collisionEntities.length;
-            
-            // Optimized loop with early continue
-            for (let i = 0; i < collisionEntities.length; i++) {
-                const entity = collisionEntities[i];
-                entity.object3D.traverse((obj) => {
-                    if (obj.isMesh) {
-                        obj.userData.collision = true;
-                        obj.userData.isNavmesh = true;
-                        this.rayCastObjects.push(obj);
-                    }
-                });
-            }
-        } else {
-            // Create default plane only once
-            if (!this.collisionMesh) {
-                const planeGeometry = new THREE.PlaneGeometry(100, 100, 1);
-                planeGeometry.rotateX(-Math.PI / 2);
-                const planeMaterial = new THREE.MeshNormalMaterial();
-                this.collisionMesh = new THREE.Mesh(planeGeometry, planeMaterial);
-                this.collisionMesh.userData.collision = true;
-                if (this.debugMode) console.log("navigation-05: Created default collision plane");
-            }
-            this.rayCastObjects.push(this.collisionMesh);
-        }
-        
-        // Critical warning only when objects are lost
-        if (this.rayCastObjects.length === 0 && previousCount > 0) {
-            console.warn("navigation-05: CRITICAL - Lost all collision objects! VR teleportation disabled.");
-        }
-        
-        this.lastRaycastCount = this.rayCastObjects.length;
-
-        // Handle ignore entities
-        if (this.data.ignoreEntities !== "") {
-            const ignoreEntities = this.el.sceneEl.querySelectorAll(this.data.ignoreEntities);
-            for (let i = 0; i < ignoreEntities.length; i++) {
-                const entity = ignoreEntities[i];
-                entity.object3D.traverse((obj) => {
-                    if (obj.isMesh) {
-                        this.rayCastObjects.push(obj);
-                    }
-                });
-            }
-        }
-    },
-
-    getMouseState() {
-        // Optimized mouse state using cached objects
-        return (event) => {
-            const rect = this.canvas.getBoundingClientRect();
-            if (event.clientX != null) {
-                this.mousePosition.x = event.clientX - rect.left;
-                this.mousePosition.y = event.clientY - rect.top;
-                return this.mousePosition;
-            } else if (event.touches && event.touches[0]) {
-                this.mousePosition.x = event.touches[0].clientX - rect.left;
-                this.mousePosition.y = event.touches[0].clientY - rect.top;
-                return this.mousePosition;
-            }
-        };
-    },
-
-    getTeleportPositionFromCursor() {
-        // Unified teleport position calculation using a-cursor raycaster
-        if (!this.cursorRaycaster?.raycaster) {
-            // Single attempt to re-establish connection
-            if (this.cursorEl?.components.raycaster?.raycaster) {
-                this.cursorRaycaster = this.cursorEl.components.raycaster;
-            } else {
-                return false;
-            }
-        }
-        
-        if (this.rayCastObjects.length === 0) return false;
-        
-        // First, raycast against ALL scene objects to check for occlusion
-        const allIntersects = this.cursorRaycaster.raycaster.intersectObjects(this.allSceneMeshes || [], true);
-        
-        if (allIntersects.length === 0) return false;
-        
-        // Get the first (closest) intersection
-        const firstHit = allIntersects[0];
-        
-        // Check if the first hit is a navmesh object
-        // If something else is in front of the navmesh, teleportation is blocked
-        if (!firstHit.object.userData.isNavmesh) {
-            return false; // Something is occluding the navmesh
-        }
-        
-        const intersect = firstHit;
-        
-        if (!this.isValidNormalsAngle(intersect.face.normal, intersect.object) || 
-            intersect.object.userData.collision !== true) {
-            return false;
-        }
-
-        // Reuse matrix calculation
-        this.collisionObjectNormalMatrix.getNormalMatrix(intersect.object.matrixWorld);
-        const worldNormal = this.tempVector3.copy(intersect.face.normal)
-            .applyMatrix3(this.collisionObjectNormalMatrix).normalize();
-
-        return {
-            point: intersect.point,
-            normal: worldNormal
-        };
-    },
-
-    // Keep old method name as alias for backwards compatibility
-    getTeleportPositionVR() {
-        return this.getTeleportPositionFromCursor();
-    },
-
-    getTeleportPosition() {
-        // Optimized teleport position calculation with cached objects
-        return (x, y) => {
-            if (this.rayCastObjects.length === 0 || !this.cam || !this.canvas) return false;
-
-            const rect = this.canvas.getBoundingClientRect();
-            this.ndcMouse.x = (x / (rect.right - rect.left)) * 2 - 1;
-            this.ndcMouse.y = -(y / (rect.bottom - rect.top)) * 2 + 1;
-
-            this.rayCaster.setFromCamera(this.ndcMouse, this.cam);
-            const intersects = this.rayCaster.intersectObjects(this.rayCastObjects);
-
-            if (intersects.length === 0) return false;
-            
-            const intersect = intersects[0];
-            if (!this.isValidNormalsAngle(intersect.face.normal, intersect.object) || 
-                intersect.object.userData.collision !== true) return false;
-
-            // Reuse matrix and vector calculations
-            this.collisionObjectNormalMatrix.getNormalMatrix(intersect.object.matrixWorld);
-            const worldNormal = this.tempVector3.copy(intersect.face.normal)
-                .applyMatrix3(this.collisionObjectNormalMatrix).normalize();
-
-            return {
-                point: intersect.point,
-                normal: worldNormal
-            };
-        };
-    },
-
-    isValidNormalsAngle(normal, object) {
-        this.collisionObjectNormalMatrix.getNormalMatrix(object.matrixWorld);
-        this.collisionWorldNormal.copy(normal).applyNormalMatrix(this.collisionObjectNormalMatrix);
-        const angle = this.referenceNormal.angleTo(this.collisionWorldNormal);
-        return (THREE.MathUtils.RAD2DEG * angle) <= this.data.landingMaxAngle;
-    },
-
-    transition(positionData, targetQuaternion) {
-        this.transitionProgress = 0;
-        
-        // Handle both formats efficiently
-        if (positionData.point) {
-            this.transitionCamPosEnd.copy(positionData.point);
-            this.targetSurfaceNormal.copy(positionData.normal);
-        } else {
-            this.transitionCamPosEnd.copy(positionData);
-            this.targetSurfaceNormal.set(0, 1, 0);
-        }
-        
-        this.transitionCamPosStart.copy(this.camRig.position);
-        this.transitioning = true;
-        this.el.emit("navigation-start");
-        
-        // Handle rotation transition
-        this.transitionRotStart.copy(this.camRig.quaternion);
-        
-        if (targetQuaternion) {
-            this.transitionRotEnd.copy(targetQuaternion);
-        } else if (this.data.alignToSurface && positionData.normal) {
-            this.transitionRotEnd.setFromUnitVectors(this.upVector, this.targetSurfaceNormal);
-        } else {
-            this.transitionRotEnd.copy(this.camRig.quaternion);
-        }
-        
-        // Immediate tunnel animation for VR
-        if (this.isVR && this.tunnelElement) {
-            this.triggerTunnelAnimation();
-        }
-    },
-
-    triggerTunnelAnimation() {
-        if (this.tunnelElement) {
-            this.tunnelElement.removeAttribute("animation__tunnel_down");
-            this.tunnelElement.removeAttribute("animation__tunnel_up");
-            
-            this.tunnelElement.setAttribute("animation__tunnel_down", {
-                property: "scale.y",
-                to: -1,
-                dur: 250,
-                easing: "easeInQuad"
-            });
-        }
-    },
-
-    triggerTunnelUpAnimation() {
-        if (this.tunnelElement) {
-            this.tunnelElement.removeAttribute("animation__tunnel_down");
-            this.tunnelElement.removeAttribute("animation__tunnel_up");
-            
-            this.tunnelElement.setAttribute("animation__tunnel_up", {
-                property: "scale.y", 
-                to: -0.1,
-                dur: 500,
-                easing: "easeOutQuad"
-            });
-        }
-    },
-
-    hideCursor() {
-        this.teleportIndicator.visible = false;
-    },
-
-    mouseMove(event) {
-        const mouseState = this.getMouseState()(event);
-        if (mouseState) {
-            this.mousePosition.x = mouseState.x;
-            this.mousePosition.y = mouseState.y;
-        }
-    },
-
-    mouseDown(event) {
-        this.updateRaycastObjects();
-        const mouseState = this.getMouseState()(event);
-        if (mouseState) {
-            this.mouseOriginalPosition.x = mouseState.x;
-            this.mouseOriginalPosition.y = mouseState.y;
-        }
-    },
-
-    mouseUp(event) {
-        // Optimized mouse up with precise click detection
-        if (this.mousePosition.x === this.mouseOriginalPosition.x && 
-            this.mousePosition.y === this.mouseOriginalPosition.y) {
-            
-            const teleportData = this.getTeleportPosition()(this.mousePosition.x, this.mousePosition.y);
-            if (teleportData) {
-                this.teleportIndicator.position.copy(teleportData.point);
-                
-                let targetQuaternion = null;
-                if (this.data.alignToSurface && teleportData.normal) {
-                    this.teleportQuaternion.setFromUnitVectors(this.upVector, teleportData.normal);
-                    targetQuaternion = this.teleportQuaternion.clone();
-                }
-                
-                this.transition(teleportData, targetQuaternion);
-            }
-        }
-    },
-
-    easeInOutQuad(t) {
-        return t < 0.5 ? 2 * t * t : (4 - 2 * t) * t - 1;
-    },
-
-    play() {
-        // Setup cursor for all modes (VR and desktop)
-        this.setupCursor();
-        window.addEventListener("keydown", this.hideCursor, false);
-        
-        if (this.isVR) {
-            this.initializeTunnelForVR();
-        }
-    },
-
-    pause() {
-        this.transitioning = false;
-        this.hideCursor();
-        window.removeEventListener("keydown", this.hideCursor);
-    },
-
-    tick(time, deltaTime) {
-        // Performance monitoring (debug only)
-        if (this.debugMode && this.perfStats) {
-            this.perfStats.avgFrameTime = (this.perfStats.avgFrameTime * 0.9) + (deltaTime * 0.1);
-            if (time - this.perfStats.lastPerfReport > 10000) {
-                console.log("navigation-05 Performance:", {
-                    avgFrameTime: this.perfStats.avgFrameTime.toFixed(2) + "ms",
-                    raycastCount: this.perfStats.raycastCount,
-                    raycastObjects: this.rayCastObjects.length
-                });
-                this.perfStats.raycastCount = 0;
-                this.perfStats.lastPerfReport = time;
-            }
-        }
-
-        // Optimized raycast object updates (less frequent)
-        if (!this.lastRaycastUpdate || time - this.lastRaycastUpdate > 15000) {
-            const previousCount = this.rayCastObjects.length;
-            this.updateRaycastObjects();
-            if (this.debugMode && this.rayCastObjects.length !== previousCount) {
-                console.log("navigation-05: Raycast objects updated - count:", this.rayCastObjects.length);
-            }
-            this.lastRaycastUpdate = time;
-        }
-        
-        // Optimized cursor display with throttled checks
-        if (!this.transitioning) {
-            let teleportPos = false;
-            
-            if (time - this.lastTeleportCheck > this.teleportCheckInterval) {
-                // Always use cursor raycaster for consistent behavior
-                teleportPos = this.getTeleportPositionFromCursor();
-                if (this.debugMode && this.perfStats) this.perfStats.raycastCount++;
-                
-                this.cachedTeleportPos = teleportPos;
-                this.lastTeleportCheck = time;
-            } else {
-                teleportPos = this.cachedTeleportPos;
-            }
-            
-            if (teleportPos) {
-                this.teleportIndicator.visible = true;
-                const position = teleportPos.point || teleportPos;
-                this.teleportIndicator.position.copy(position);
-                
-                if (this.data.alignToSurface && teleportPos.normal) {
-                    const offsetPosition = this.tempVector3_2.copy(position)
-                        .add(this.tempVector3.copy(teleportPos.normal).multiplyScalar(0.01));
-                    this.teleportIndicator.position.copy(offsetPosition);
-                    
-                    this.teleportQuaternion.setFromUnitVectors(this.upVector, teleportPos.normal);
-                    this.teleportIndicator.quaternion.copy(this.teleportQuaternion);
-                } else {
-                    this.teleportIndicator.quaternion.identity();
-                }
-            } else {
-                this.teleportIndicator.visible = false;
-            }
-        }
-
-        // Optimized transition animation
-        if (this.transitioning) {
-            this.transitionProgress += deltaTime * this.data.transitionSpeed;
-            const easedProgress = this.easeInOutQuad(this.transitionProgress);
-            const camPos = this.camRig.position;
-            
-            camPos.lerpVectors(this.transitionCamPosStart, this.transitionCamPosEnd, easedProgress);
-            
-            if (this.data.alignToSurface && this.transitionRotStart && this.transitionRotEnd) {
-                const rotationProgress = Math.min(easedProgress * this.data.rotationSmoothing, 1.0);
-                this.camRig.quaternion.slerpQuaternions(this.transitionRotStart, this.transitionRotEnd, rotationProgress);
-            }
-            
-            if (this.transitionProgress >= 1) {
-                this.transitioning = false;
-                camPos.copy(this.transitionCamPosEnd);
-                
-                if (this.data.alignToSurface && this.transitionRotEnd) {
-                    this.camRig.quaternion.copy(this.transitionRotEnd);
-                }
-                
-                this.el.emit("navigation-end");
-                
-                if (this.isVR && this.tunnelElement) {
-                    this.triggerTunnelUpAnimation();
-                }
-            }
-        }
+    update(oldData) {
+      if (!this.indicator) return;
+      if (oldData.cursorColor !== this.data.cursorColor) {
+        this.indicator.material.color.set(this.data.cursorColor);
+      }
+      if (oldData.cursorOpacity !== this.data.cursorOpacity) {
+        this.indicator.material.opacity = this.data.cursorOpacity;
+      }
     },
 
     remove() {
-        // Proper cleanup to prevent memory leaks
-        this.cam = null;
-        this.canvas = null;
-        this.rayCastObjects.length = 0;
-        
-        if (this.vrCursor && this.vrCursorClickHandler) {
-            this.vrCursor.removeEventListener('click', this.vrCursorClickHandler);
-            this.vrCursorClickHandler = null;
+      if (this.indicator) {
+        this.el.sceneEl.object3D.remove(this.indicator);
+        this.indicator.geometry.dispose();
+        this.indicator.material.dispose();
+      }
+      // Clean up vignette
+      if (this.vignette) {
+        if (this.vignette.parent) {
+          this.vignette.parent.remove(this.vignette);
         }
-        
-        if (this.teleportIndicator) {
-            this.el.sceneEl.object3D.remove(this.teleportIndicator);
-            this.teleportIndicator.material.dispose();
-            this.teleportIndicator.geometry.dispose();
-            this.teleportIndicator = null;
-        }
-        
-        if (this.collisionMesh) {
-            this.collisionMesh.geometry.dispose();
-            this.collisionMesh.material.dispose();
-            this.collisionMesh = null;
-        }
-        
-        // Clean up cached references
-        this.tunnelElement = null;
-        this.vrCursor = null;
-        this.vrRaycaster = null;
-    }
-});
+        this.vignette.geometry.dispose();
+        this.vignette.material.dispose();
+        this.vignette = null;
+      }
+      if (this.cursorEl && this._handleClick) {
+        this.cursorEl.removeEventListener("click", this._handleClick);
+      }
+      if (this._observer) {
+        this._observer.disconnect();
+      }
+      const canvas = this.el.sceneEl?.canvas;
+      if (canvas) {
+        canvas.removeEventListener("mousedown", this._onMouseDown);
+        canvas.removeEventListener("mousemove", this._onMouseMove);
+        canvas.removeEventListener("mouseup", this._onMouseUp);
+      }
+    },
+  });
 
-// Optimized VR Pinch-to-Teleport Component
-AFRAME.registerComponent("pinch-teleport-02", {
+  // ============================================================================
+  // GO-TO COMPONENT
+  // ============================================================================
+  AFRAME.registerComponent("go-to", {
     schema: {
-        cameraRig: { type: "selector", default: "" },
-        collisionEntities: { type: "string", default: ".collision" }
+      position: { type: "vec3" },
+      rotation: { type: "vec3", default: { x: 0, y: 0, z: 0 } },
+      duration: { type: "number", default: DEFAULTS.GO_TO_DURATION },
+      easing: { type: "string", default: "easeInOutQuad" },
     },
 
     init() {
-        this.debugMode = window.location.search.includes('debug=true');
-        if (this.debugMode) console.log("navigation-05: Initializing optimized pinch-teleport");
-        
-        // Pre-allocate reusable objects
-        this.rayCaster = new THREE.Raycaster();
-        this.rayCastObjects = [];
-        this.handDirection = new THREE.Vector3();
-        this.handPosition = new THREE.Vector3();
-        
-        this.lastCollisionCount = 0;
-        this.lastRaycastCount = 0;
-        
-        this.createTeleportRing();
-        this.updateRaycastObjects();
+      this.log = createLogger("[go-to]");
 
-        // Bind methods once
-        this.onPinchStarted = this.onPinchStarted.bind(this);
-        this.onPinchEnded = this.onPinchEnded.bind(this);
+      this.cameraEl =
+        this.el.sceneEl.querySelector("[camera]") ||
+        this.el.sceneEl.querySelector("a-camera");
+      this.tunnelEl = null;
+      this.isVR = false;
+      this.animating = false;
+      this.useVROffset = false;
 
-        // Add all event listeners
-        const events = ['pinchstarted', 'triggerdown', 'gripdown'];
-        const endEvents = ['pinchended', 'triggerup', 'gripup'];
-        
-        events.forEach(event => this.el.addEventListener(event, this.onPinchStarted));
-        endEvents.forEach(event => this.el.addEventListener(event, this.onPinchEnded));
+      // Pre-allocated objects
+      this._startPos = new THREE.Vector3();
+      this._endPos = new THREE.Vector3();
+      this._startQuat = new THREE.Quaternion();
+      this._endQuat = new THREE.Quaternion();
+      this._headOffset = new THREE.Vector3();
+      this._tempVec = new THREE.Vector3();
+      this._vrDelta = null;
+      this._vrApplied = null;
+
+      this.el.sceneEl.addEventListener("enter-vr", () => (this.isVR = true));
+      this.el.sceneEl.addEventListener("exit-vr", () => (this.isVR = false));
+
+      this._onClick = this._onClick.bind(this);
+      this.el.addEventListener("click", this._onClick);
     },
 
-    createTeleportRing() {
-        const ringGeometry = new THREE.RingGeometry(0.2, 0.25, 32, 1);
-        ringGeometry.rotateX(-Math.PI / 2);
-        ringGeometry.translate(0, 0.02, 0);
-        
-        const ringMaterial = new THREE.MeshBasicMaterial({
-            color: "#00ff00",
-            transparent: true,
-            opacity: 0.8
+    _onClick(evt) {
+      if (!evt.detail?.intersection) return;
+
+      this.tunnelEl = this.tunnelEl || this.el.sceneEl.querySelector("#tunnel");
+      if (this.tunnelEl) {
+        this.tunnelEl.removeAttribute("animation__down");
+        this.tunnelEl.setAttribute("animation__down", {
+          property: "scale.y",
+          to: -1,
+          dur: 500,
+          easing: this.data.easing,
         });
-        
-        this.teleportRing = new THREE.Mesh(ringGeometry, ringMaterial);
-        this.teleportRing.visible = false;
-        this.el.sceneEl.object3D.add(this.teleportRing);
+      }
+
+      const { position, rotation } = this.data;
+      const hasRotation =
+        Math.abs(rotation.x) + Math.abs(rotation.y) + Math.abs(rotation.z) >
+        0.001;
+
+      if (this.isVR) {
+        this._moveVR(position);
+      } else {
+        this._moveDesktop(position, hasRotation ? rotation : null);
+      }
     },
 
-    updateRaycastObjects() {
-        const previousCount = this.rayCastObjects.length;
-        this.rayCastObjects.length = 0;
-        
-        if (this.data.collisionEntities) {
-            const collisionEntities = this.el.sceneEl.querySelectorAll(this.data.collisionEntities);
-            
-            if (this.debugMode && collisionEntities.length !== this.lastCollisionCount) {
-                console.log("navigation-05: Pinch-teleport collision entities:", collisionEntities.length);
-                this.lastCollisionCount = collisionEntities.length;
-            }
-            
-            for (let i = 0; i < collisionEntities.length; i++) {
-                const entity = collisionEntities[i];
-                entity.object3D.traverse((obj) => {
-                    if (obj.isMesh) {
-                        obj.userData.collision = true;
-                        this.rayCastObjects.push(obj);
-                    }
-                });
-            }
-        }
-        
-        if (this.debugMode && this.rayCastObjects.length !== this.lastRaycastCount) {
-            console.log("navigation-05: Pinch-teleport raycast objects:", this.rayCastObjects.length);
-            this.lastRaycastCount = this.rayCastObjects.length;
-        }
+    _moveVR(targetPosition) {
+      const xrManager = this.el.sceneEl.renderer?.xr;
+      if (!xrManager?.isPresenting) {
+        this._moveDesktop(targetPosition, null);
+        return;
+      }
+
+      const camera = this.el.sceneEl.camera;
+      if (!camera) return;
+
+      camera.getWorldPosition(this._headOffset);
+      this._vrDelta = new THREE.Vector3(
+        targetPosition.x - this._headOffset.x,
+        targetPosition.y - this._headOffset.y,
+        targetPosition.z - this._headOffset.z
+      );
+      this._vrApplied = new THREE.Vector3();
+
+      this.animating = true;
+      this.useVROffset = true;
+      this._animStart = performance.now();
     },
 
-    getTeleportPosition() {
-        const handObject = this.el.object3D;
-        handObject.getWorldPosition(this.handPosition);
-        
-        // Reuse direction vector
-        this.handDirection.set(0, 0, -1).applyQuaternion(handObject.quaternion);
-        this.rayCaster.set(this.handPosition, this.handDirection);
-        
-        const intersects = this.rayCaster.intersectObjects(this.rayCastObjects);
-        
-        if (intersects.length > 0) {
-            const intersect = intersects[0];
-            if (intersect.object.userData.collision === true) {
-                return intersect.point;
-            }
-        }
-        
-        return null;
+    _moveDesktop(targetPosition, targetRotation) {
+      // Find the rig (parent of camera) - move rig instead of camera
+      const cameraParent = this.cameraEl?.parentElement;
+      const rigEl =
+        cameraParent &&
+        cameraParent !== this.el.sceneEl &&
+        cameraParent.hasAttribute("id")
+          ? cameraParent
+          : null;
+
+      const target = rigEl?.object3D || this.cameraEl?.object3D;
+      if (!target) return;
+
+      this._moveTarget = target;
+      this._startPos.copy(target.position);
+      this._endPos.set(targetPosition.x, targetPosition.y, targetPosition.z);
+
+      this._animateRotation = false;
+      if (targetRotation) {
+        this._animateRotation = true;
+        this._startQuat.copy(target.quaternion);
+        this._endQuat.setFromEuler(
+          new THREE.Euler(
+            THREE.MathUtils.degToRad(targetRotation.x),
+            THREE.MathUtils.degToRad(targetRotation.y),
+            THREE.MathUtils.degToRad(targetRotation.z),
+            "YXZ"
+          )
+        );
+      }
+
+      this.animating = true;
+      this.useVROffset = false;
+      this._animStart = performance.now();
     },
 
-    onPinchStarted(event) {
-        if (this.debugMode) console.log("navigation-05: Pinch started:", event.type);
-        const teleportPos = this.getTeleportPosition();
-        if (teleportPos) {
-            this.teleportRing.position.copy(teleportPos);
-            this.teleportRing.visible = true;
-        }
-    },
+    _applyVROffset(offset) {
+      const xrManager = this.el.sceneEl.renderer?.xr;
+      if (!xrManager?.isPresenting) return;
 
-    onPinchEnded(event) {
-        if (this.debugMode) console.log("navigation-05: Pinch ended:", event.type);
-        if (this.teleportRing.visible) {
-            const teleportPos = this.teleportRing.position.clone();
-            this.teleportToCameraRig(teleportPos);
-            this.teleportRing.visible = false;
-        }
-    },
+      const baseSpace = xrManager.getReferenceSpace();
+      if (!baseSpace) return;
 
-    teleportToCameraRig(position) {
-        if (!this.data.cameraRig) return;
-        
-        if (this.debugMode) console.log("navigation-05: Teleporting to:", position);
-        
-        const startPos = this.data.cameraRig.object3D.position.clone();
-        const endPos = position.clone();
-        
-        let progress = 0;
-        const duration = 500;
-        const startTime = performance.now();
-        
-        const animate = () => {
-            const elapsed = performance.now() - startTime;
-            progress = Math.min(elapsed / duration, 1);
-            
-            const easedProgress = progress < 0.5 ? 2 * progress * progress : (4 - 2 * progress) * progress - 1;
-            this.data.cameraRig.object3D.position.lerpVectors(startPos, endPos, easedProgress);
-            
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                this.data.cameraRig.object3D.position.copy(endPos);
-                if (this.debugMode) console.log("navigation-05: Teleport complete");
-            }
-        };
-        
-        animate();
+      const transform = new XRRigidTransform(
+        { x: -offset.x, y: -offset.y, z: -offset.z, w: 1 },
+        { x: 0, y: 0, z: 0, w: 1 }
+      );
+      xrManager.setReferenceSpace(baseSpace.getOffsetReferenceSpace(transform));
     },
 
     tick() {
-        // Less frequent updates for better performance
-        if (!this.lastUpdate || performance.now() - this.lastUpdate > 30000) {
-            this.updateRaycastObjects();
-            this.lastUpdate = performance.now();
+      if (!this.animating) return;
+
+      const progress = Math.min(
+        (performance.now() - this._animStart) / this.data.duration,
+        1
+      );
+      const eased = easeInOutQuad(progress);
+
+      if (this.useVROffset && this._vrDelta) {
+        const target = this._tempVec.copy(this._vrDelta).multiplyScalar(eased);
+        const increment = new THREE.Vector3().subVectors(
+          target,
+          this._vrApplied
+        );
+        if (increment.lengthSq() > 0.0001) {
+          this._applyVROffset(increment);
+          this._vrApplied.copy(target);
         }
-        
-        // Update ring position efficiently
-        if (this.teleportRing.visible) {
-            const teleportPos = this.getTeleportPosition();
-            if (teleportPos) {
-                this.teleportRing.position.copy(teleportPos);
-            } else {
-                this.teleportRing.visible = false;
-            }
+      } else if (this._moveTarget) {
+        this._moveTarget.position.lerpVectors(
+          this._startPos,
+          this._endPos,
+          eased
+        );
+        if (this._animateRotation) {
+          this._moveTarget.quaternion.slerpQuaternions(
+            this._startQuat,
+            this._endQuat,
+            eased
+          );
         }
+      }
+
+      if (progress >= 1) {
+        this._finishAnimation();
+      }
+    },
+
+    _finishAnimation() {
+      this.animating = false;
+
+      if (this.useVROffset && this._vrDelta) {
+        const remaining = new THREE.Vector3().subVectors(
+          this._vrDelta,
+          this._vrApplied
+        );
+        if (remaining.lengthSq() > 0.0001) this._applyVROffset(remaining);
+        this._vrDelta = this._vrApplied = null;
+      } else if (this._moveTarget) {
+        this._moveTarget.position.copy(this._endPos);
+        if (this._animateRotation) {
+          this._moveTarget.quaternion.copy(this._endQuat);
+          this._animateRotation = false;
+        }
+      }
+
+      if (this.tunnelEl) {
+        this.tunnelEl.removeAttribute("animation__up");
+        this.tunnelEl.setAttribute("animation__up", {
+          property: "scale.y",
+          to: 0.1,
+          dur: 500,
+          easing: this.data.easing,
+        });
+      }
+
+      this.cameraEl?.emit("go-to-complete");
     },
 
     remove() {
-        // Proper cleanup
-        if (this.teleportRing) {
-            this.el.sceneEl.object3D.remove(this.teleportRing);
-            this.teleportRing.material.dispose();
-            this.teleportRing.geometry.dispose();
-            this.teleportRing = null;
-        }
-
-        // Remove all event listeners
-        const events = ['pinchstarted', 'triggerdown', 'gripdown', 'pinchended', 'triggerup', 'gripup'];
-        events.forEach(event => this.el.removeEventListener(event, this.onPinchStarted));
-        events.forEach(event => this.el.removeEventListener(event, this.onPinchEnded));
-    }
-});
-
-// Optimized click-teleport component
-AFRAME.registerComponent("click-teleport-03", {
-    schema: {
-        cameraRig: { type: "selector", default: "#cameraRig" }
+      this.el.removeEventListener("click", this._onClick);
     },
+  });
 
+  // ============================================================================
+  // SAVE-POSITION-AND-ROTATION COMPONENT
+  // ============================================================================
+  AFRAME.registerComponent("save-position-and-rotation", {
     init() {
-        this.debugMode = window.location.search.includes('debug=true');
-        
-        this.onClick = (event) => {
-            if (this.debugMode) console.log("navigation-05: Click-teleport activated");
-            
-            if (this.data.cameraRig && event.detail.intersection) {
-                const teleportPos = event.detail.intersection.point;
-                this.data.cameraRig.object3D.position.copy(teleportPos);
-                
-                this.el.sceneEl.emit("navigation-start");
-                setTimeout(() => this.el.sceneEl.emit("navigation-end"), 100);
-            }
-        };
-        
-        this.el.addEventListener('click', this.onClick);
+      this.cameraEl =
+        this.el.sceneEl.querySelector("[camera]") ||
+        this.el.sceneEl.querySelector("a-camera");
+      this.isVR = false;
+
+      this.el.sceneEl.addEventListener("enter-vr", () => (this.isVR = true));
+      this.el.sceneEl.addEventListener("exit-vr", () => (this.isVR = false));
+
+      this._saveInterval = setInterval(() => {
+        try {
+          const target = this.isVR
+            ? this.cameraEl?.object3D?.parent || this.cameraEl?.object3D
+            : this.cameraEl?.object3D;
+
+          if (target) {
+            const { x, y, z } = target.position;
+            localStorage.setItem("cameraPosition", JSON.stringify({ x, y, z }));
+          }
+          if (this.cameraEl) {
+            localStorage.setItem(
+              "cameraRotation",
+              JSON.stringify(this.cameraEl.getAttribute("rotation"))
+            );
+          }
+        } catch (e) {
+          // Storage unavailable
+        }
+      }, DEFAULTS.SAVE_INTERVAL);
     },
 
     remove() {
-        this.el.removeEventListener('click', this.onClick);
-    }
-});
-
-// Optimized go-to component with better performance
-AFRAME.registerComponent("go-to", {
-    schema: {
-        position: { type: "vec3" },
-        rotation: { type: "vec3", default: { x: 0, y: 0, z: 0 } },
-        unload: { type: "string", default: "" },
-        load: { type: "asset", default: "" },
-        duration: { type: "number", default: 2000 },
-        easing: { type: "string", default: "easeInOutQuad" },
+      clearInterval(this._saveInterval);
     },
+  });
 
-    init: function () {
-        this.rigEl = document.getElementById("cameraRig");
-        this.sceneEl = this.el.sceneEl;
-        this.debugMode = window.location.search.includes('debug=true');
-
-        // Pre-allocate reusable objects
-        this.tempVector3 = new THREE.Vector3();
-        this.transitionRotStart = new THREE.Quaternion();
-        this.transitionRotEnd = new THREE.Quaternion();
-
-        // Initialize properties
-        this.animatingRotation = false;
-        this.rotationStartTime = 0;
-        this.rotationDuration = this.data.duration;
-        
-        // Bind methods
-        this.onClick = this.onClick.bind(this);
-        this.onAnimEnd = this.onAnimEnd.bind(this);
-        this.hideTunnel = this.hideTunnel.bind(this);
-
-        this.el.addEventListener("click", this.onClick);
-        window.addEventListener("keydown", this.hideTunnel);
-    },
-
-    onClick: function (evt) {
-        var intersection = evt.detail && evt.detail.intersection;
-        if (!intersection) return;
-
-        // Cache tunnel element for performance
-        if (!this.tunnelElement) {
-            this.tunnelElement = this.sceneEl.querySelector("#tunnel");
-        }
-
-        if (this.tunnelElement) {
-            this.tunnelElement.removeAttribute("animation__down");
-            this.tunnelElement.setAttribute("animation__down", {
-                property: "scale.y",
-                to: -1,
-                dur: 500,
-                easing: this.data.easing,
-            });
-        }
-
-        this.moveCamera();
-    },
-
-    moveCamera: function () {
-        this.tempVector3.copy(this.rigEl.object3D.position);
-
-        const hasRotation = (Math.abs(this.data.rotation.x) > 0.001) || 
-                          (Math.abs(this.data.rotation.y) > 0.001) || 
-                          (Math.abs(this.data.rotation.z) > 0.001);
-
-        if (hasRotation) {
-            this.transitionRotStart.copy(this.rigEl.object3D.quaternion);
-            
-            const targetEuler = new THREE.Euler(
-                THREE.MathUtils.degToRad(this.data.rotation.x),
-                THREE.MathUtils.degToRad(this.data.rotation.y),
-                THREE.MathUtils.degToRad(this.data.rotation.z),
-                'YXZ'
-            );
-            this.transitionRotEnd.setFromEuler(targetEuler);
-
-            this.animatingRotation = true;
-            this.rotationStartTime = performance.now();
-            this.rotationDuration = this.data.duration;
-        } else {
-            this.animatingRotation = false;
-        }
-
-        this.rigEl.removeAttribute("animation__go");
-        this.rigEl.setAttribute("animation__go", {
-            property: "position",
-            dur: this.data.duration,
-            easing: this.data.easing,
-            from: this.tempVector3.x + " " + this.tempVector3.y + " " + this.tempVector3.z,
-            to: this.data.position.x + " " + this.data.position.y + " " + this.data.position.z,
+  // ============================================================================
+  // DIAGNOSTIC (debug mode only)
+  // ============================================================================
+  if (isDebug()) {
+    window.TeleportDiagnostic = {
+      run() {
+        console.log("=== TELEPORT DIAGNOSTIC ===");
+        const scene = document.querySelector("a-scene");
+        const camera =
+          document.querySelector("[camera]") ||
+          document.querySelector("a-camera");
+        const teleport = camera?.components?.["a-cursor-teleport"];
+        console.table({
+          Scene: !!scene,
+          Camera: !!camera,
+          Cursor: !!document.querySelector("a-cursor"),
+          Navmeshes: document.querySelectorAll("[navmesh]").length,
+          VRMode: teleport?.isVR ?? "N/A",
+          CachedMeshes: teleport?._navmeshCache?.length ?? "N/A",
         });
-
-        if (this.debugMode) {
-            console.log("go-to: Moving to:", this.data.position);
-            if (hasRotation) console.log("go-to: Rotating to:", this.data.rotation);
-        }
-
-        this.rigEl.addEventListener("animationcomplete__go", this.onAnimEnd, { once: true });
-    },
-
-    onAnimEnd: function () {
-        if (this.animatingRotation) {
-            this.rigEl.object3D.quaternion.copy(this.transitionRotEnd);
-            this.animatingRotation = false;
-        }
-
-        var hasReplace = this.data.unload && this.data.load;
-        if (hasReplace) {
-            var el = document.querySelector(this.data.unload);
-            if (el && el.getObject3D("mesh")) {
-                this._disposeOldMesh(el.getObject3D("mesh"));
-                el.removeObject3D("mesh");
-                el.removeAttribute("gltf-model");
-                el.setAttribute("gltf-model", this.data.load);
-                el.addEventListener("model-loaded", () => {
-                    this._tunnelUp();
-                    this.rigEl.emit("go-to-complete");
-                }, { once: true });
-                return;
-            }
-        }
-        
-        this._tunnelUp();
-        this.rigEl.emit("go-to-complete");
-    },
-
-    _disposeOldMesh: function(mesh) {
-        // Proper mesh disposal to prevent memory leaks
-        mesh.traverse(function (node) {
-            if (node.isMesh) {
-                if (node.geometry) node.geometry.dispose();
-                
-                const materials = Array.isArray(node.material) ? node.material : [node.material];
-                materials.forEach(function (material) {
-                    if (material) {
-                        Object.values(material).forEach(function (value) {
-                            if (value && value.isTexture) value.dispose();
-                        });
-                        material.dispose();
-                    }
-                });
-            }
-        });
-    },
-
-    tick: function(time, deltaTime) {
-        if (this.animatingRotation) {
-            const currentTime = performance.now();
-            const elapsed = currentTime - this.rotationStartTime;
-            const progress = Math.min(elapsed / this.rotationDuration, 1.0);
-
-            const easedProgress = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
-
-            this.rigEl.object3D.quaternion.slerpQuaternions(
-                this.transitionRotStart, 
-                this.transitionRotEnd, 
-                easedProgress
-            );
-
-            if (progress >= 1.0) {
-                this.animatingRotation = false;
-                this.rigEl.object3D.quaternion.copy(this.transitionRotEnd);
-            }
-        }
-    },
-
-    _tunnelUp: function () {
-        if (this.tunnelElement) {
-            this.tunnelElement.removeAttribute("animation__up");
-            this.tunnelElement.setAttribute("animation__up", {
-                property: "scale.y",
-                to: 0.1,
-                dur: 500,
-                easing: this.data.easing,
-            });
-        }
-    },
-
-    hideTunnel: function() {
-        if (this.tunnelElement) {
-            this.tunnelElement.setAttribute("visible", false);
-        }
-    },
-
-    remove: function () {
-        this.el.removeEventListener("click", this.onClick);
-        window.removeEventListener("keydown", this.hideTunnel);
-    }
-});
-
-// Optimized save position component
-AFRAME.registerComponent("save-position-and-rotation", {
-    schema: {},
-    init: function () {
-        this.debugMode = window.location.search.includes('debug=true');
-        if (this.debugMode) console.log("navigation-05: save-position-and-rotation initialized");
-
-        const cameraRig = this.el;
-        const head = cameraRig.querySelector("[camera]");
-
-        const recordPositionAndRotation = () => {
-            try {
-                const position = cameraRig.getAttribute("position");
-                const rotation = head.getAttribute("rotation");
-                localStorage.setItem("position", JSON.stringify(position));
-                localStorage.setItem("rotation", JSON.stringify(rotation));
-            } catch (e) {
-                if (this.debugMode) console.warn("Failed to save position/rotation:", e);
-            }
-        };
-
-        this.saveInterval = setInterval(recordPositionAndRotation, 5000); // Less frequent saves
-    },
-
-    remove: function() {
-        if (this.saveInterval) {
-            clearInterval(this.saveInterval);
-        }
-    }
-});
-
-// Optimized diagnostic functions
-const TeleportDiagnostic = {
-    run() {
-        if (!window.location.search.includes('debug=true')) return; // Only run in debug mode
-        
-        console.log("=== navigation-05 OPTIMIZED DIAGNOSTIC ===");
-        
-        const scene = document.querySelector('a-scene');
-        const cameraRig = document.querySelector('#cameraRig');
-        const vrCursor = document.querySelector('a-cursor');
-        const collisionEntities = document.querySelectorAll('.collision');
-        
-        console.log("Scene:", !!scene, "| CameraRig:", !!cameraRig, "| VRCursor:", !!vrCursor, "| Collisions:", collisionEntities.length);
-        
-        if (cameraRig?.components['a-cursor-teleport']) {
-            const comp = cameraRig.components['a-cursor-teleport'];
-            console.log("Teleport Component - VR:", comp.isVR, "| Objects:", comp.rayCastObjects.length, "| Ready:", comp.vrCursorInitialized);
-        }
-        
-        console.log("=== END OPTIMIZED DIAGNOSTIC ===");
-    },
-
-    debugCurrentRoom() {
-        if (!window.location.search.includes('debug=true')) return;
-        
-        console.log("=== OPTIMIZED ROOM DEBUG ===");
-        const cameraRig = document.querySelector('#cameraRig');
-        if (cameraRig?.components['a-cursor-teleport']) {
-            const comp = cameraRig.components['a-cursor-teleport'];
-            console.log("Collision Objects:", comp.rayCastObjects.length, "| VR Ready:", comp.vrCursorInitialized);
-            
-            if (comp.rayCastObjects.length === 0) {
-                console.warn("NO COLLISION OBJECTS - checking alternatives...");
-                ['.collision', '.teleport-surface', 'a-plane'].forEach(sel => {
-                    const found = document.querySelectorAll(sel).length;
-                    if (found > 0) console.log(`Found ${found} elements with '${sel}'`);
-                });
-            }
-        }
-        console.log("=== END ROOM DEBUG ===");
-    }
-};
-
-// Auto-run diagnostic (debug mode only)
-if (window.location.search.includes('debug=true')) {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => setTimeout(TeleportDiagnostic.run, 2000));
-    } else {
-        setTimeout(TeleportDiagnostic.run, 2000);
-    }
-}
-
-window.TeleportDiagnostic = TeleportDiagnostic;
+        console.log("=== END ===");
+      },
+    };
+    document.addEventListener("DOMContentLoaded", () => {
+      setTimeout(window.TeleportDiagnostic.run, 2000);
+    });
+  }
+})();
