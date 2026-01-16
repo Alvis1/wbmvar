@@ -1,8 +1,8 @@
 {
   "EdijsNiksEglītis": [
     {
-      "name": "index.html",
-      "path": "EdijsNiksEglītis/WebXRPrototype/index.html"
+      "name": "StressVR.html",
+      "path": "EdijsNiksEglītis/WebXRPrototype/StressVR.html"
     },
     {
       "name": "index.html",
@@ -35,8 +35,8 @@
   ],
   "LeoMaurel": [
     {
-      "name": "index.html",
-      "path": "LeoMaurel/index.html"
+      "name": "stellar_nomad.html",
+      "path": "LeoMaurel/stellar_nomad.html"
     },
     {
       "name": "index.html",
@@ -45,8 +45,8 @@
   ],
   "LianaOzolina": [
     {
-      "name": "index.html",
-      "path": "LianaOzolina/Armada/index.html"
+      "name": "AttentionArmada.html",
+      "path": "LianaOzolina/Armada/AttentionArmada.html"
     },
     {
       "name": "index.html",
