@@ -25,7 +25,9 @@ AFRAME.registerComponent('click-to-shoot', {
 // Change color when hit + die + respawn
 AFRAME.registerComponent('hit-handler', {
   schema: {
-    points: { type: 'int', default: 1 }
+    points: { type: 'int', default: 1 },
+    respawn: { type: 'boolean', default: true },
+    respawnDelay: { type: 'int', default: 10000 }
   },
   dependencies: ['material'],
 
@@ -33,39 +35,81 @@ AFRAME.registerComponent('hit-handler', {
     const el = this.el;
     const color = new THREE.Color();
     let dead = false;
+    let active = false;
+    let gameRunning = false; // authoritative flag
 
+    // Start inactive
+    el.setAttribute('visible', false);
+    el.classList.remove('enemy');
+
+    // Game start
+    el.sceneEl.addEventListener('game-start', () => {
+      gameRunning = true;
+      active = true;
+      dead = false;
+
+      el.setAttribute('visible', true);
+      el.classList.add('enemy');
+      el.play();
+    });
+
+    // Game end
+    el.sceneEl.addEventListener('game-end', () => {
+      gameRunning = false;
+      active = false;
+      dead = false;
+
+      el.setAttribute('visible', false);
+      el.classList.remove('enemy');
+      el.pause();
+    });
+
+    // Hit
     el.addEventListener('hit', () => {
-      if (dead) return;
+      if (!gameRunning || !active || dead) return;
       color.addScalar(0.05);
       el.components.material.material.color.copy(color);
     });
 
+    // Die
     el.addEventListener('die', () => {
-      if (dead) return;
+      if (!gameRunning || !active || dead) return;
       dead = true;
 
-      // Emit score with points (can be negative)
       el.sceneEl.emit('score', { points: this.data.points });
 
       el.setAttribute('visible', false);
       el.classList.remove('enemy');
       el.pause();
 
+      // Conditional respawn
+      if (!this.data.respawn) return;
+
       setTimeout(() => {
+        // Abort if game is no longer running
+        if (!gameRunning) return;
+
         dead = false;
         el.setAttribute('visible', true);
         el.classList.add('enemy');
         el.play();
-      }, 10000);
+      }, this.data.respawnDelay);
     });
   }
 });
+
+
 
 // Score system
 AFRAME.registerComponent('score-keeper', {
   init: function () {
     this.score = 0;
     this.el.setAttribute('text', 'value', '0');
+
+    this.el.sceneEl.addEventListener('game-start', () => {
+    this.score = 0;
+    this.el.setAttribute('text', 'value', '0');
+    });
 
     this.el.sceneEl.addEventListener('score', (evt) => {
       const points = evt.detail?.points ?? 1; // default +1
@@ -74,6 +118,59 @@ AFRAME.registerComponent('score-keeper', {
     });
   }
 });
+
+
+// Start Game Target
+AFRAME.registerComponent('start-game-target', {
+  init: function () {
+    const el = this.el;
+    let active = true;
+
+    el.classList.add('enemy');
+
+    el.addEventListener('die', () => {
+      if (!active) return;
+      active = false;
+
+      el.sceneEl.emit('game-start');
+
+      el.setAttribute('visible', false);
+      el.classList.remove('enemy');
+      el.pause();
+    });
+
+    // Reappear after game ends
+    el.sceneEl.addEventListener('game-end', () => {
+      active = true;
+      el.setAttribute('visible', true);
+      el.classList.add('enemy');
+      el.play();
+    });
+  }
+});
+
+
+//Game timer
+AFRAME.registerComponent('game-timer', {
+  schema: {
+    duration: { type: 'int', default: 60 } // seconds
+  },
+
+  init: function () {
+    this.timeout = null;
+
+    this.el.sceneEl.addEventListener('game-start', () => {
+      // Clear previous timer if any
+      if (this.timeout) clearTimeout(this.timeout);
+
+      // Start countdown
+      this.timeout = setTimeout(() => {
+        this.el.sceneEl.emit('game-end');
+      }, this.data.duration * 1000);
+    });
+  }
+});
+
 </script>
 
 
@@ -89,13 +186,14 @@ AFRAME.registerComponent('score-keeper', {
   <a-entity id="bulletTemplate" bullet geometry="primitive: sphere; radius: 1" material="color: orange"></a-entity>
 
   <a-asset>
+        <a-asset-item id="SkyBall" src="Objects/SkyBall.glb"></a-asset-item>
         <a-asset-item id="Ship" src="Objects/SpaceShip.glb"></a-asset-item>
         <a-asset-item id="Bull" src="Objects/BulletModel.glb" scale="5 5 5"></a-asset-item>
   </a-asset>
 
 <!--World-->
 <body>
-  <a-scene environment="preset: tron; ground: noise; groundTexture: none; dressing: none" fog="color: #940000; far: 83.99999999999999">
+  <a-scene game-timer="duration: 10" environment="preset: tron; ground: noise; groundTexture: none; dressing: none" fog="color: #940000; far: 84">
 
 <!--Score-Text-->
 <a-entity
@@ -113,16 +211,15 @@ AFRAME.registerComponent('score-keeper', {
 
 <!--<a-entity position="0 0.99938 0" text="color: white; value: Get in loser. We're going shooting.; width: 1.5"></a-entity>-->
 
-
-
-
   <a-entity id="bulletTemplate" bullet gltf-model="#Bull" material="color: orange"></a-entity>
 
-  <a-entity class="enemy" target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="0 1.5 -4" hit-handler="points: 1"></a-entity>
-  <a-entity class="enemy" target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="2 3.5 -4" hit-handler="points: 1"></a-entity>
-  <a-entity class="enemy"  target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="-2 3.5 -4" hit-handler="points: 1"></a-entity>
-  <a-entity class="enemy bad" target="" geometry="primitive: octahedron" material="emissive: #ff0000; emissiveIntensity: 0.75" position="4 1.5 -4" hit-handler="points: -1"></a-entity>
-  <a-entity class="enemy bad" target="" geometry="primitive: octahedron" material="emissive: #ff0000; emissiveIntensity: 0.75" position="-4 1.5 -4" hit-handler="points: -1"></a-entity>
+  <a-entity id="startTarget" target="" geometry="primitive: octahedron" material="emissive: #00ff00; emissiveIntensity: 0.75" position="0 1.5 -8" scale="2 2 2" start-game-target></a-entity>
+
+  <a-entity class="enemy" target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="0 1.5 -4" hit-handler="points: 1; respawn: false"></a-entity>
+  <a-entity class="enemy" target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="2 3.5 -4" hit-handler="points: 1; respawn: false"></a-entity>
+  <a-entity class="enemy"  target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="-2 3.5 -4" hit-handler="points: 1; respawn: false"></a-entity>
+  <a-entity class="enemy bad" target="" geometry="primitive: octahedron" material="emissive: #ff0000; emissiveIntensity: 0.75" position="4 1.5 -4" hit-handler="points: -1; respawn: true; respawnDelay: 2000"></a-entity>
+  <a-entity class="enemy bad" target="" geometry="primitive: octahedron" material="emissive: #ff0000; emissiveIntensity: 0.75" position="-4 1.5 -4" hit-handler="points: -1; respawn: true; respawnDelay: 2000"></a-entity>
 
 <!--Camera-Ship-Gun-->
     <a-camera id="camera" id="head" look-controls wasd-controls="acceleration: 10; wsAxis: y; wsInverted: true" position="0 1 2">
@@ -135,7 +232,7 @@ AFRAME.registerComponent('score-keeper', {
       <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
     </a-camera>
 
-    <a-entity gltf-model="#Ship" scale="5 5 5" rotation="0 180 0"></a-entity>
+    <a-entity gltf-model="#SkyBall" scale="50 50 50" rotation="0 90 0" ></a-entity>
 
   </a-scene>
 </body>
