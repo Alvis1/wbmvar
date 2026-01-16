@@ -26,52 +26,62 @@
     </script>
 
     <script>
-      AFRAME.registerComponent('cube-ui-manager', {
+      AFRAME.registerComponent('shake-on-bag-touch', {
         init: function () {
-        // List of cubes that need to be collected
-        // Each cube has an ID (matches my <a-box id="">) and a display label
-        this.cubes = [
-            { id: 'cube1', label: 'blue cube', collected: false },
-            { id: 'cube4', label: 'pink cube', collected: false },
-            { id: 'cube3', label: 'black cube', collected: false }
-        ];
 
-        // Reference to the <a-text> element that shows the checklist
-        this.textEl = document.querySelector('#cube-ui-text');
+          // Initial position from HTML
+          const pos = this.el.getAttribute('position');
+          this.initialPosition = new THREE.Vector3(pos.x, pos.y, pos.z);
 
-        // Listen for a custom event 'cube-collected' triggered when a cube is put in the bag
-        this.el.sceneEl.addEventListener('cube-collected', (e) => {
-            const cubeId = e.detail.cubeId;
+          this.isShaking = false;
+          this.isTouchingBag = false;
 
-            // Find the cube in our list
-            const cube = this.cubes.find(c => c.id === cubeId);
+          // Collision START
+          this.el.addEventListener('obbcollisionstarted', (e) => {
+            const otherEl = e.detail.withEl;
+            if (!otherEl || otherEl.id !== 'bag') return;
 
-            // Mark it as collected if it wasn't already
-            if (cube && !cube.collected) {
-            cube.collected = true;
+            if (this.isTouchingBag || this.isShaking) return;
 
-            // Update the UI after marking
-            this.updateUI();
+            this.isTouchingBag = true;
+            this.isShaking = true;
+
+            this.el.removeAttribute('animation__shake');
+            this.el.setAttribute('animation__shake', {
+              property: 'rotation',
+              dur: 100,
+              loop: 6,
+              dir: 'alternate',
+              easing: 'easeInOutSine',
+              to: '0 0 10'
+            });
+          });
+
+          // Collision END
+          this.el.addEventListener('obbcollisionended', (e) => {
+            const otherEl = e.detail.withEl;
+            if (!otherEl || otherEl.id !== 'bag') return;
+            this.isTouchingBag = false;
+          });
+
+          // Animation complete
+          this.el.addEventListener('animationcomplete__shake', () => {
+            // Only reset position if NOT grabbed
+            if (!this.el.is('grabbed')) {
+              this.el.setAttribute('rotation', '0 0 0');
+              this.el.setAttribute('position', this.initialPosition);
+            } else {
+              // If grabbed, just reset rotation
+              this.el.setAttribute('rotation', '0 0 0');
             }
-        });
-
-        // Initialize UI on scene load
-        this.updateUI();
-        },
-
-        // Function to update the checklist text
-        updateUI: function () {
-        let text = '';
-        this.cubes.forEach(cube => {
-            // Use [ ] for not collected and [x] for collected
-            text += `${cube.collected ? '[x]' : '[ ]'} ${cube.label}\n`;
-        });
-
-        // Set the updated text on the <a-text> element
-        this.textEl.setAttribute('value', text);
+            this.isShaking = false;
+          });
         }
-    });
-    </script>
+      });
+      </script>
+
+
+
 
 
   </head>
@@ -93,7 +103,7 @@
 
       <!--Equirectangular Image env-->
       <a-assets>
-        <img id="room_env" src="./img/room_env.jpg">
+        <img id="room_env" src="./img/room_env4.jpg">
       </a-assets>
       <a-sky src="#room_env"></a-sky>
 
@@ -101,25 +111,32 @@
       <a-box id="table" color="white" position="-0.75 0.5 0" scale="0.7 1 1.5"></a-box>
 
       <!--Grabbing objects-->
-      <a-box id="cube1" grabbable="hoverEnabled: true; hoverColor: #red;" position="-0.85 1.05 0.6" color="yellow" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" hide-on-bag-touch></a-box>
-      <a-box id="cube2" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.5 1.05 0" color="blue" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" hide-on-bag-touch collect-on-bag-touch></a-box>
-      <a-box id="cube3" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.7 1.05 0.2" color="black" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" hide-on-bag-touch collect-on-bag-touch></a-box>
-      <a-box id="cube4" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.6 1.05 -0.6" color="pink" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" hide-on-bag-touch collect-on-bag-touch></a-box>
+      <a-box id="cube1" grabbable="hoverEnabled: true; hoverColor: #red;" position="-0.85 1.05 0.6" color="yellow" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" shake-on-bag-touch></a-box>
+      <!-- <a-box id="cube2" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.5 1.05 0" color="blue" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" hide-on-bag-touch></a-box> -->
+      <a-box id="cube3" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.7 1.05 0.2" color="black" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" hide-on-bag-touch></a-box>
+      <a-box id="cube4" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.6 1.05 -0.6" color="pink" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" shake-on-bag-touch></a-box>
       <a-box id="cube5" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.45 1.05 -0.5" color="green" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" hide-on-bag-touch></a-box>
 
       <a-box id="bag" position="-0.51 1.1 0.6" color="grey" scale="0.2 0.2 0.2" obb-collider="centerModel: true"></a-box>
 
-    <a-entity id="cube-ui" position="0 1.8 -1.2">
-      <a-plane width="0.6" height="0.5" color="#222" opacity="0.8"></a-plane>
-        <a-text
-          id="cube-ui-text"
-          value="[ ] blue cube\n[ ] pink cube \n[ ] black cube"
-          color="white"
-          width="1"
-          align="left"
-          position="-0.28 0.18 0.01">
-        </a-text>
-    </a-entity>
+      <a-assets>
+        <a-asset-item id="water" src="./src/water_bottle/water_bottle.obj"></a-asset-item>
+        <a-asset-item id="water-mtl" src="./src/water_bottle/water_bottle.mtl"></a-asset-item>
+      </a-assets>
+
+      <a-entity obj-model="obj: #water; mtl: #water-mtl" position="-0.5 1.05 0"></a-entity>
+
+      <a-entity id="cube-ui" position="0 1.8 -1.2">
+        <a-plane width="0.6" height="0.5" color="#222" opacity="0.8"></a-plane>
+          <a-text
+            id="cube-ui-text"
+            value="[ ] blue cube\n[ ] green cube \n[ ] black cube"
+            color="white"
+            width="1"
+            align="left"
+            position="-0.28 0.18 0.01">
+          </a-text>
+      </a-entity>
       
 
     </a-scene>
