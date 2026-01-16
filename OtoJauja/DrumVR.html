@@ -69,10 +69,9 @@
         gltf-model="#timpani"
         position="0.62694 0.5 -1.39"
         obb-collider="centerModel: true"
-        sound="on: click; poolSize: 100; src: sounds/timpani_hit.mp3"
-        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: obbcollisionstarted; to: 1.1 1.1 1.1"
-        timpani-hit
-        lane="x: 0.56087"
+        sound="on: obbcollisionstarted; poolSize: 100; src: sounds/timpani_hit.mp3"
+        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 0.62694 0.5 -1.39; loop: 1; property: position; startEvents: obbcollisionstarted; to: 0.62694 0.4 -1.39"
+        scale="0.8 0.8 0.8"
       >
       </a-entity>
       <a-entity
@@ -80,10 +79,9 @@
         gltf-model="#timpani"
         position="-0.62694 0.5 -1.39"
         obb-collider="centerModel: true"
-        sound="on: click; poolSize: 100; src: sounds/timpani_hit.mp3"
-        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: obbcollisionstarted; to: 1.1 1.1 1.1"
-        timpani-hit
-        lane="x: -0.56087"
+        sound="on: obbcollisionstarted; poolSize: 100; src: sounds/timpani_hit.mp3"
+        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: -0.62694 0.5 -1.39; loop: 1; property: position; startEvents: obbcollisionstarted; to: -0.62694 0.4 -1.39"
+        scale="0.8 0.8 0.8"
       >
       </a-entity>
       <a-entity
@@ -91,10 +89,9 @@
         gltf-model="#timpani"
         position="-1.22403 0.5 -0.22061"
         obb-collider="centerModel: true"
-        sound="on: click; poolSize: 100; src: sounds/timpani_hit.mp3"
-        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: obbcollisionstarted; to: 1.1 1.1 1.1"
-        timpani-hit
-        lane="x: -1.22403"
+        sound="on: obbcollisionstarted; poolSize: 100; src: sounds/timpani_hit.mp3"
+        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: -1.22403 0.5 -0.22061; loop: 1; property: position; startEvents: obbcollisionstarted; to: -1.22403 0.4 -0.22061"
+        scale="0.8 0.8 0.8"
       >
       </a-entity>
       <a-entity
@@ -102,14 +99,13 @@
         gltf-model="#timpani"
         position="1.22403 0.5 -0.22061"
         obb-collider="centerModel: true"
-        sound="on: click; poolSize: 100; src: sounds/timpani_hit.mp3"
-        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: obbcollisionstarted; to: 1.1 1.1 1.1"
-        timpani-hit
-        lane="x: 1.22403"
+        sound="on: obbcollisionstarted; poolSize: 100; src: sounds/timpani_hit.mp3"
+        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1.22403 0.5 -0.22061; loop: 1; property: position; startEvents: obbcollisionstarted; to: 1.22403 0.4 -0.22061"
+        scale="0.8 0.8 0.8"
       >
       </a-entity>
 
-      <!--Sheet music floating in front-->
+      <!--Sheet music-->
       <a-plane
         id="sheetMusic"
         src="#beethoven5th_timpani_1"
@@ -120,6 +116,12 @@
         next-sheet
       >
       </a-plane>
+      <!--<a-entity
+        id="UI-sheetMusic"
+        position="0 1.6 -1.5"
+        text="value: Click for next page; align: center; width: 4; color: white"
+        start-game
+      ></a-entity>-->
 
       <!--Env-->
       <a-plane
