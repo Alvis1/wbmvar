@@ -3,6 +3,7 @@
         <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
         <script src="res/components/spaceship-controls.js"></script>
+        <script src="res/components/sky-follow-camera.js"></script>
         <script src="res/shaders/sky-shader.js"></script>
         <script src="res/components/planet-atmosphere.js"></script>
         <script src="res/components/atmospheric-post-processing.js"></script>
@@ -25,20 +26,20 @@
             
             <a-icosahedron 
                 position="0 1.6 -3"
-                scale="80 80 80"
+                scale="800 800 800"
                 radius="1"
                 detail="6"
-                planet-atmosphere="center: 0 1.6 -3; atmosphereRadius: 90; planetRadius: 80; sunPosition: -230.18989 139.65639 -115.81083"
+                planet-atmosphere="center: 0 1.6 -3; atmosphereRadius: 90; planetRadius: 80; sunPosition: 100 50 -50"
                 material="src: #grass-color; 
                           normalMap: #grass-normal; 
                           roughness: 1.0; 
                           roughnessMap: #grass-roughness;
                           aoMap: #grass-ao;
-                          repeat: 50 50;
-                          normalTextureRepeat: 50 50;
-                          roughnessTextureRepeat: 50 50;
-                          aoTextureRepeat: 50 50;
-                          normalScale: 0.3 0.3">
+                          repeat: 500 500;
+                          normalTextureRepeat: 500 500;
+                          roughnessTextureRepeat: 500 500;
+                          aoTextureRepeat: 500 500;
+                          normalScale: 0.03 0.03">
                 >
             </a-icosahedron>
             
@@ -51,7 +52,7 @@
                 shadow="cast: true; receive: true"
                 material="color: #7a6f63; roughness: 1; metalness: 0; opacity: 0.7; transparent: true; side: double">
             </a-ring> -->
-            <a-entity id="sun" position="-230.18989 139.65639 -115.81083">
+            <a-entity id="sun" position="100 50 -50">
                 <a-light type="directional" intensity="0.8" color="#ffeecc" cast-shadow="true">
                 </a-light>
                 
@@ -59,16 +60,28 @@
                 </a-light>
             </a-entity>
             
-            <a-entity id="spaceship" position="100 1.6 100" spaceship-controls="speed: 20; rotationSpeed: 1.5">
+            <a-entity id="spaceship" position="3093 1.6 -417" spaceship-controls>
                 <a-entity gltf-model="#spaceship" position="0 -0.4 0.5" rotation="0 180 0">
                 </a-entity>
                 <a-entity id="cameraRig" position="0 0 0">
-                    <a-entity id="head" position="0 0.6 -1" camera="near: 0.1" look-controls="reverseMouseDrag: false" update-atmosphere-uniforms="sunSelector: #sun">
+                    <a-entity id="head" position="0 0.6 -1" camera="near: 0.1; far: 100000" look-controls="reverseMouseDrag: false" update-atmosphere-uniforms="sunSelector: #sun">
                     </a-entity>
                 </a-entity>
             </a-entity>
             
-            <a-sky material="shader: sky; starDensity: 0.003; starBrightness: 1.5; sunPosition: 100 50 -50; sunColor: #FFF1D4; sunSize: 0.0015; sunGlow: 0.3"></a-sky>
+            <a-box 
+                id="skybox"
+                scale="50000 50000 50000"
+                material="shader: sky; 
+                          starDensity: 0.003; 
+                          starBrightness: 1.5; 
+                          sunPosition: 100 50 -50; 
+                          sunColor: #FFF1D4; 
+                          sunSize: 0.0015; 
+                          sunGlow: 0.3;
+                          side: back"
+                sky-follow-camera>
+            </a-box>
         </a-scene>
     </body>
 </html>
