@@ -173,12 +173,28 @@
         />
         <img
           id="tree3"
-          src="assets/winterTreeSprite-removebg.png"
+          src="assets/treeSprite1-removebg.png"
           crossorigin="anonymous"
         />
         <img
           id="winterTree"
           src="assets/winterTreeSprite-removebg.png"
+          crossorigin="anonymous"
+        />
+        <img id="tree4" src="assets/tree2.png" crossorigin="anonymous" />
+        <img
+          id="tree5"
+          src="assets/vecteezy_a-green-wide-tree.png"
+          crossorigin="anonymous"
+        />
+        <img
+          id="tree6"
+          src="assets/vecteezy_a-large-green-oak-tree.png"
+          crossorigin="anonymous"
+        />
+        <img
+          id="tree7"
+          src="assets/vecteezy_isolated-trees.png"
           crossorigin="anonymous"
         />
       </a-assets>
@@ -188,50 +204,104 @@
 
         <a-entity
           id="textStump"
-          position="0.63 2 -6.16"
+          position="0.63 1.5223 -6.16"
           text="color: black; value: Click the stump to start learning!"
-          rotation="0 18.8 0"
+          rotation="9.807 0 0"
           scale="3 5 2"
           visible="false"
         ></a-entity>
 
         <!-- Billboard tree sprites instead of 3D models -->
-        <a-plane
-          src="#tree1"
-          width="3"
-          height="4"
-          position="-5 2 -8"
-          billboard
-          material="transparent: true; alphaTest: 0.5; side: double"
-        ></a-plane>
 
         <a-plane
-          src="#tree2"
-          width="4"
-          height="5"
-          position="6 2.5 -10"
-          billboard
-          material="transparent: true; alphaTest: 0.5; side: double"
-        ></a-plane>
-
-        <a-plane
-          src="#tree3"
+          src="#tree4"
           width="3.5"
           height="4.5"
-          position="-3 2.25 -12"
-          billboard
-          material="transparent: true; alphaTest: 0.5; side: double"
+          position="-3 7.71538 14.77511"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="7 4 2"
+          id="normalTree"
+          rotation="0 -21.194281799684283 0"
         ></a-plane>
 
         <a-plane
-          src="#tree1"
+          src="#tree6"
           width="2.5"
           height="3.5"
-          position="8 1.75 -15"
-          billboard
-          material="transparent: true; alphaTest: 0.5; side: double"
+          position="1 8.21527 -25.16792"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="5 5 1"
+          id="treeFront"
         ></a-plane>
-
+        <a-plane
+          src="#tree6"
+          width="2.5"
+          height="3.5"
+          position="8.60274 8.1272 -15"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          rotation="0 135.07651907547697 0"
+          scale="5 5 1"
+          id="bigTree"
+        ></a-plane>
+        <a-plane
+          src="#tree6"
+          width="2.5"
+          height="3.5"
+          position="-8.13185 11.41197 -13.08602"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          rotation="0 -131.3127593192626 0"
+          scale="7 7 1"
+          id="treeBig2"
+        ></a-plane>
+        <a-plane
+          src="#tree4"
+          width="3.5"
+          height="4.5"
+          position="13.98061 5.68445 15.63235"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="7 3 2"
+          id="normalTree-2"
+          rotation="-0.4394586288653414 38.488439887913046 -0.5500394833255903"
+        ></a-plane>
+        <a-plane
+          src="#tree4"
+          width="3.5"
+          height="4.5"
+          position="-9.93837 5.78657 3.45258"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="3 3 2"
+          id="normalTree-3"
+          rotation="0 -39.40345348673697 0"
+        ></a-plane>
+        <a-plane
+          src="#tree6"
+          width="2.5"
+          height="3.5"
+          position="-8.13185 11.41197 -2.20805"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          rotation="0 -76.55632875420008 0"
+          scale="7 7 1"
+          id="treeBig2-2"
+        ></a-plane>
+        <a-plane
+          src="#tree6"
+          width="2.5"
+          height="3.5"
+          position="15.13563 8.1272 0.80008"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          rotation="0 77.79334463388753 0"
+          scale="5 5 1"
+          id="bigTree-2"
+        ></a-plane>
+        <!---Floor-->
         <a-plane
           position="0 0 0"
           rotation="-90 0 0"
@@ -266,8 +336,9 @@
           width="3"
           height="4"
           position="-5 2 -8"
-          billboard
-          material="transparent: true; alphaTest: 0.5; side: double"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          rotation="0 43.30300424039736 0"
         ></a-plane>
 
         <a-plane
@@ -280,21 +351,54 @@
         ></a-plane>
 
         <a-plane
-          src="#tree3"
-          width="3.5"
-          height="4.5"
-          position="-3 2.25 -12"
-          billboard
-          material="transparent: true; alphaTest: 0.5; side: double"
-        ></a-plane>
-
-        <a-plane
           src="#tree1"
           width="2.5"
           height="3.5"
           position="8 1.75 -15"
           billboard
           material="transparent: true; alphaTest: 0.5; side: double"
+        ></a-plane>
+        <a-plane
+          src="#tree2"
+          width="4"
+          height="5"
+          position="6 3.84009 9.18269"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="2 2 2"
+          id="treeWinter"
+        ></a-plane>
+        <a-plane
+          src="#tree2"
+          width="4"
+          height="5"
+          position="-6.65526 4.89928 20.8904"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="2 2 2"
+          id="treeWinter-2"
+        ></a-plane>
+        <a-plane
+          src="#tree2"
+          width="4"
+          height="5"
+          position="-17.59475 4.59144 1.33047"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="2 2 2"
+          id="treeWinter-3"
+          rotation="0 -66.5673825538893 0"
+        ></a-plane>
+        <a-plane
+          src="#tree2"
+          width="4"
+          height="5"
+          position="18.06973 3.84009 3.36398"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="2 2 2"
+          id="treeWinter-4"
+          rotation="0 76.31625943804026 0"
         ></a-plane>
 
         <a-plane
