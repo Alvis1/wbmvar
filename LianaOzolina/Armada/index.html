@@ -24,52 +24,39 @@ AFRAME.registerComponent('click-to-shoot', {
 
 // Change color when hit + die + respawn
 AFRAME.registerComponent('hit-handler', {
+  schema: {
+    points: { type: 'int', default: 1 }
+  },
   dependencies: ['material'],
 
   init: function () {
     const el = this.el;
     const color = new THREE.Color();
-    let dead = false; // prevent double death / scoring
+    let dead = false;
 
-    // Initial color
-    color.set('#000');
-    el.components.material.material.color.copy(color);
-
-    // On hit
     el.addEventListener('hit', () => {
-    if (dead) return;
-    color.addScalar(0.05);
-    el.components.material.material.color.copy(color);
+      if (dead) return;
+      color.addScalar(0.05);
+      el.components.material.material.color.copy(color);
     });
 
-    // On die
     el.addEventListener('die', () => {
-    if (dead) return;
-    dead = true;
+      if (dead) return;
+      dead = true;
 
-    // Add score
-    el.sceneEl.emit('score');
+      // Emit score with points (can be negative)
+      el.sceneEl.emit('score', { points: this.data.points });
 
-    // Disable target
-    el.setAttribute('visible', false);
-    el.classList.remove('enemy');
-    el.pause();
+      el.setAttribute('visible', false);
+      el.classList.remove('enemy');
+      el.pause();
 
-    // Respawn after 10 seconds
-    setTimeout(() => {
-
-    // Reset state
-    dead = false;
-
-    // Reset color
-    color.set('#000');
-    el.components.material.material.color.copy(color);
-
-    // Re-enable target
-    el.setAttribute('visible', true);
-    el.classList.add('enemy');
-    el.play();
-    }, 10000); // 10 seconds
+      setTimeout(() => {
+        dead = false;
+        el.setAttribute('visible', true);
+        el.classList.add('enemy');
+        el.play();
+      }, 10000);
     });
   }
 });
@@ -80,8 +67,9 @@ AFRAME.registerComponent('score-keeper', {
     this.score = 0;
     this.el.setAttribute('text', 'value', '0');
 
-    this.el.sceneEl.addEventListener('score', () => {
-      this.score += 1;
+    this.el.sceneEl.addEventListener('score', (evt) => {
+      const points = evt.detail?.points ?? 1; // default +1
+      this.score += points;
       this.el.setAttribute('text', 'value', `${this.score}`);
     });
   }
@@ -109,6 +97,7 @@ AFRAME.registerComponent('score-keeper', {
 <body>
   <a-scene environment="preset: tron; ground: noise; groundTexture: none; dressing: none" fog="color: #940000; far: 83.99999999999999">
 
+<!--Score-Text-->
 <a-entity
   position="12.250 4 -40"
   scale="10 10 10"
@@ -129,11 +118,11 @@ AFRAME.registerComponent('score-keeper', {
 
   <a-entity id="bulletTemplate" bullet gltf-model="#Bull" material="color: orange"></a-entity>
 
-  <a-entity class="target" target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="0 1.5 -4" hit-handler></a-entity>
-  <a-entity class="target" target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="2 3.5 -4" hit-handler></a-entity>
-  <a-entity class="target" target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="-2 3.5 -4" hit-handler></a-entity>
-  <a-entity class="target" target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="4 1.5 -4" hit-handler></a-entity>
-  <a-entity class="target" target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="-4 1.5 -4" hit-handler></a-entity>
+  <a-entity class="enemy" target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="0 1.5 -4" hit-handler="points: 1"></a-entity>
+  <a-entity class="enemy" target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="2 3.5 -4" hit-handler="points: 1"></a-entity>
+  <a-entity class="enemy"  target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="-2 3.5 -4" hit-handler="points: 1"></a-entity>
+  <a-entity class="enemy bad" target="" geometry="primitive: octahedron" material="emissive: #ff0000; emissiveIntensity: 0.75" position="4 1.5 -4" hit-handler="points: -1"></a-entity>
+  <a-entity class="enemy bad" target="" geometry="primitive: octahedron" material="emissive: #ff0000; emissiveIntensity: 0.75" position="-4 1.5 -4" hit-handler="points: -1"></a-entity>
 
 <!--Camera-Ship-Gun-->
     <a-camera id="camera" id="head" look-controls wasd-controls="acceleration: 10; wsAxis: y; wsInverted: true" position="0 1 2">
