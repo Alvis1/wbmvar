@@ -8,103 +8,167 @@
     <!--A-Frame Extras-->
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
 
-    <!--navigation component used in ImGame -->   
+    <!--navigation component used in ImGame -->
     <script src="a-cursor-navigation.js"></script>
 
     <!--Anination switcher-->
     <script src="animation-switcher.js"></script>
 
-    <!--aframe-environment-component-->  
+    <!--aframe-environment-component-->
     <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
-
   </head>
   <body>
     <a-scene obb-collider="showColliders: false">
-        <!--Assets-->
-        <assets>
-            <a-asset-item id="timpani" src="objects/timpani.glb"></a-asset-item>
-            <img id="koncerta-skatuve" src="images/360-percussion.JPG">
-            <img id="beethoven5th_timpani_1" src="images/beethoven5th_timpani1.jpg">
-            <img id="beethoven5th_timpani_2" src="images/beethoven5th_timpani2.jpg">
-            <img id="beethoven5th_timpani_3" src="images/beethoven5th_timpani3.jpg">
-            <img id="beethoven5th_timpani_4" src="images/beethoven5th_timpani4.jpg">
-            <audio id="timpani-hit" src="sounds/timpani_hit.mp3"></audio>
-            <audio id="beethoven5th" src="sounds/Beethoven_5th_symphony.mp3"></audio>
-            <!--<a-video id="360-orchestra" src="video/360-orchestra.mp4"></a-video>-->
-            <video id="orchestraVideo" src="video/360-orchestra.mp4" loop="false" crossorigin="anonymous"></video>
-        </assets>
+      <!--Assets-->
+      <assets>
+        <a-asset-item id="timpani" src="objects/timpani.glb"></a-asset-item>
+        <img id="koncerta-skatuve" src="images/360-percussion.JPG" />
+        <img
+          id="beethoven5th_timpani_1"
+          src="images/beethoven5th_timpani1.jpg"
+        />
+        <img
+          id="beethoven5th_timpani_2"
+          src="images/beethoven5th_timpani2.jpg"
+        />
+        <img
+          id="beethoven5th_timpani_3"
+          src="images/beethoven5th_timpani3.jpg"
+        />
+        <img
+          id="beethoven5th_timpani_4"
+          src="images/beethoven5th_timpani4.jpg"
+        />
+        <audio id="timpani-hit" src="sounds/timpani_hit.mp3"></audio>
+        <audio
+          id="beethoven5th"
+          src="sounds/Beethoven_5th_symphony.mp3"
+        ></audio>
+        <!--<a-video id="360-orchestra" src="video/360-orchestra.mp4"></a-video>-->
+        <video
+          id="orchestraVideo"
+          src="video/360-orchestra.mp4"
+          loop="false"
+          crossorigin="anonymous"
+        ></video>
+      </assets>
 
-        <!--Start button-->
-          <a-entity
-          id="startButton"
-          geometry="primitive: plane; width: 1.2; height: 0.4"
-          material="color: #fccf23"
-          position="0 1.6 -1.5"
-          text="value: Start; align: center; width: 4; color: black"
-          start-game
-        ></a-entity>
+      <!--Start button-->
+      <a-entity
+        id="startButton"
+        geometry="primitive: plane; width: 1.2; height: 0.4"
+        material="color: #fccf23"
+        position="0 1.6 -1.5"
+        text="value: Begin; align: center; width: 4; color: black"
+        start-game
+      ></a-entity>
 
-        <!--Timpani-->
-        <a-entity id="timpani-1" gltf-model="objects/timpani.glb" position="0.56087 0.5 -1.39" obb-collider="centerModel: true" sound="on: click; poolSize: 100; src: sounds/timpani_hit.mp3" 
-                  animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: obbcollisionstarted; to: 1.1 1.1 1.1" 
-                  timpani-hit lane="x: 0.56087">
-        </a-entity>
-        <a-entity id="timpani-2" gltf-model="objects/timpani.glb" position="-0.56087 0.5 -1.39" obb-collider="centerModel: true" sound="on: click; poolSize: 100; src: sounds/timpani_hit.mp3" 
-                  animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: obbcollisionstarted; to: 1.1 1.1 1.1" 
-                  timpani-hit lane="x: -0.56087">
-        </a-entity>
-        <a-entity id="timpani-3" gltf-model="objects/timpani.glb" position="-1.22403 0.5 -0.2825" obb-collider="centerModel: true" sound="on: click; poolSize: 100; src: sounds/timpani_hit.mp3" 
-                  animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: obbcollisionstarted; to: 1.1 1.1 1.1" 
-                  timpani-hit lane="x: -1.22403">
-        </a-entity>
-        <a-entity id="timpani-4" gltf-model="objects/timpani.glb" position="1.22403 0.5 -0.2825" obb-collider="centerModel: true" sound="on: click; poolSize: 100; src: sounds/timpani_hit.mp3" 
-                  animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: obbcollisionstarted; to: 1.1 1.1 1.1" 
-                  timpani-hit lane="x: 1.22403">
-        </a-entity>
+      <!--Timpani-->
+      <a-entity
+        id="timpani-1"
+        gltf-model="#timpani"
+        position="0.62694 0.5 -1.39"
+        obb-collider="centerModel: true"
+        sound="on: click; poolSize: 100; src: sounds/timpani_hit.mp3"
+        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: obbcollisionstarted; to: 1.1 1.1 1.1"
+        timpani-hit
+        lane="x: 0.56087"
+      >
+      </a-entity>
+      <a-entity
+        id="timpani-2"
+        gltf-model="#timpani"
+        position="-0.62694 0.5 -1.39"
+        obb-collider="centerModel: true"
+        sound="on: click; poolSize: 100; src: sounds/timpani_hit.mp3"
+        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: obbcollisionstarted; to: 1.1 1.1 1.1"
+        timpani-hit
+        lane="x: -0.56087"
+      >
+      </a-entity>
+      <a-entity
+        id="timpani-3"
+        gltf-model="#timpani"
+        position="-1.22403 0.5 -0.22061"
+        obb-collider="centerModel: true"
+        sound="on: click; poolSize: 100; src: sounds/timpani_hit.mp3"
+        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: obbcollisionstarted; to: 1.1 1.1 1.1"
+        timpani-hit
+        lane="x: -1.22403"
+      >
+      </a-entity>
+      <a-entity
+        id="timpani-4"
+        gltf-model="#timpani"
+        position="1.22403 0.5 -0.22061"
+        obb-collider="centerModel: true"
+        sound="on: click; poolSize: 100; src: sounds/timpani_hit.mp3"
+        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: obbcollisionstarted; to: 1.1 1.1 1.1"
+        timpani-hit
+        lane="x: 1.22403"
+      >
+      </a-entity>
 
+      <!--Sheet music floating in front-->
+      <a-plane
+        id="sheetMusic"
+        src="#beethoven5th_timpani_1"
+        position="-1.04639 1.41827 -0.81335"
+        rotation="-13.46 45 0"
+        scale="0.7 0.7 0.7"
+        visible="false"
+        next-sheet
+      >
+      </a-plane>
 
-        <!--Sheet music floating in front-->
-        <a-plane id="sheetMusic" src="#beethoven5th_timpani_1" 
-          position="-1.00531 1.41827 -1.62609" 
-          rotation="-13.46 35 0" 
-          scale="0.7 0.7 0.7" 
-          visible="false">
-        </a-plane>
+      <!--Env-->
+      <a-plane
+        navmesh
+        position="0 0 0"
+        rotation="-90 0 0"
+        width="4"
+        height="4"
+        color="#664735"
+        shadow
+      ></a-plane>
+      <a-sky id="sky" src="#koncerta-skatuve" rotation="0 -90 0"></a-sky>
 
-        <!--Next page button-->
+      <!--Lights-->
+      <a-entity
+        light="angle: 26.56; intensity: 10; penumbra: 0.84; type: spot; castShadow: true"
+        position="0.00392 5.58091 0.12672"
+        rotation="-82 0 0"
+        id="spot01"
+      >
+      </a-entity>
+      <a-entity
+        light="color: #ffff; intensity: 1; type: ambient"
+        id="ambient"
+      ></a-entity>
+
+      <!--Camera with cursor and hand tracking enabled. Pinch gesture as click event-->
+      <a-entity
+        position="0 0 0"
+        id="cameraRig"
+        movement-controls="speed: 1.01; enabled:false"
+      >
         <a-entity
-          id="nextSheet"
-          geometry="primitive: plane; width: 0.4; height: 0.15"
-          material="color: #fccf23"
-          position="0.8 1.2 -1.5"
-          text="value: Next page; align: center; width: 2; color: black"
-          visible="false"
-          next-sheet
+          id="head"
+          position="0 1.6 0"
+          camera="near: 0.1"
+          look-controls="reverseMouseDrag: false"
+        >
+          <a-cursor color="white"></a-cursor>
+        </a-entity>
+        <a-entity
+          id="leftHand"
+          hand-tracking-grab-controls="hand: left;"
         ></a-entity>
-
-        <!--Env-->
-        <a-plane navmesh position="0 0 0" rotation="-90 0 0" width="4" height="4" color="#664735"></a-plane>
-        <a-sky id="sky" src="#koncerta-skatuve" rotation="0 -90 0"></a-sky>
-
-
-        <!--Lights-->
-        <a-entity light="angle: 26.56; intensity: 10; penumbra: 0.84; type: spot; castShadow: true" 
-                  position="0.00392 5.58091 0.12672" rotation="-82 0 0" id="spot01">
-        </a-entity>
-        <a-entity light="color: #ffff; intensity: 1; type: ambient" id="ambient"></a-entity>
-
-        <!--Camera with cursor and hand tracking enabled. Pinch gesture as click event-->
-        <a-entity 
-          position="0 0 0" 
-          id="cameraRig" 
-          movement-controls="speed: 1.01; enabled:false">
-          <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
-            <a-cursor color="white"></a-cursor>
-          </a-entity>
-          <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
-          <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
-        </a-entity>
-      
+        <a-entity
+          id="rightHand"
+          hand-tracking-grab-controls="hand: right;"
+        ></a-entity>
+      </a-entity>
     </a-scene>
 
     <script>
@@ -125,11 +189,10 @@
             sky.setAttribute("material", "shader: flat; side: back");
 
             document.querySelector("#sheetMusic").setAttribute("visible", true);
-            document.querySelector("#nextSheet").setAttribute("visible", true);
 
             this.el.setAttribute("visible", false);
           });
-        }
+        },
       });
       // Go back to start of ecperience (for testing porpuses)
       const video = document.querySelector("#orchestraVideo");
@@ -140,7 +203,6 @@
         sky.setAttribute("material", "shader: standard; side: back");
 
         document.querySelector("#sheetMusic").setAttribute("visible", false);
-        document.querySelector("#nextSheet").setAttribute("visible", false);
 
         const startButton = document.querySelector("#startButton");
         startButton.setAttribute("visible", true);
@@ -154,7 +216,7 @@
         "#beethoven5th_timpani_1",
         "#beethoven5th_timpani_2",
         "#beethoven5th_timpani_3",
-        "#beethoven5th_timpani_4"
+        "#beethoven5th_timpani_4",
       ];
       let currentSheet = 0;
 
@@ -163,9 +225,11 @@
           this.el.addEventListener("click", () => {
             currentSheet++;
             if (currentSheet >= sheets.length) currentSheet = 0;
-            document.querySelector("#sheetMusic").setAttribute("src", sheets[currentSheet]);
+            document
+              .querySelector("#sheetMusic")
+              .setAttribute("src", sheets[currentSheet]);
           });
-        }
+        },
       });
     </script>
   </body>
