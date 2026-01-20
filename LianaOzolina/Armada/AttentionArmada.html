@@ -18,20 +18,20 @@ AFRAME.registerComponent('click-to-shoot', {
   init: function () {
     document.body.addEventListener('mousedown', () => {
     this.el.emit('shoot');
-    });
+  });
   }
-});
+  });
 
-// Change color when hit + die + respawn
-AFRAME.registerComponent('hit-handler', {
-  schema: {
+  // Change color when hit + die + respawn
+    AFRAME.registerComponent('hit-handler', {
+    schema: {
     points: { type: 'int', default: 1 },
     respawn: { type: 'boolean', default: true },
     respawnDelay: { type: 'int', default: 10000 }
-  },
-  dependencies: ['material'],
+    },
+    dependencies: ['material'],
 
-  init: function () {
+    init: function () {
     const el = this.el;
     const color = new THREE.Color();
     let dead = false;
@@ -171,6 +171,32 @@ AFRAME.registerComponent('game-timer', {
   }
 });
 
+//Rotate Sky
+AFRAME.registerComponent('rotate-on-game', {
+  schema: {
+    duration: { type: 'int', default: 10000 } // ms
+  },
+
+  init: function () {
+    const el = this.el;
+
+    el.sceneEl.addEventListener('game-start', () => {
+      el.setAttribute('animation', {
+        property: 'rotation',
+        from: '0 0 0',
+        to: '0 0 360',
+        dur: this.data.duration,
+        easing: 'easeInOutQuad'
+      });
+    });
+
+    el.sceneEl.addEventListener('game-end', () => {
+      el.removeAttribute('animation');
+      el.setAttribute('rotation', '0 0 0');
+    });
+  }
+});
+
 </script>
 
 
@@ -186,26 +212,31 @@ AFRAME.registerComponent('game-timer', {
   <a-entity id="bulletTemplate" bullet geometry="primitive: sphere; radius: 1" material="color: orange"></a-entity>
 
   <a-asset>
-        <a-asset-item id="SkyBall" src="Objects/SkyBall.glb"></a-asset-item>
-        <a-asset-item id="Ship" src="Objects/SpaceShip.glb"></a-asset-item>
+        <a-asset-item id="SkyBall" src="Objects/SkyBall.glb" scale="1.5 1.5 1.5"></a-asset-item>
+        <a-asset-item id="Eye" src="Objects/Eye.glb"></a-asset-item>
         <a-asset-item id="Bull" src="Objects/BulletModel.glb" scale="5 5 5"></a-asset-item>
   </a-asset>
 
 <!--World-->
 <body>
-  <a-scene game-timer="duration: 10" environment="preset: tron; ground: noise; groundTexture: none; dressing: none" fog="color: #940000; far: 84">
+  <a-scene game-timer="duration: 10" environment="preset: starry; ground: noise; groundTexture: none; dressing: none" fog="color: #940000; far: 84">
+  
+  <a-entity
+  rotate-on-game="duration: 10000">
+    <a-entity gltf-model="#SkyBall" scale="45 45 45" rotation="0 90 0"></a-entity>
+  </a-entity>  
 
 <!--Score-Text-->
 <a-entity
-  position="12.250 4 -40"
-  scale="10 10 10"
-  text="color: #787878; width: 20; value: align: center; tabSize: 4; alphaTest: 0.5; align: center"
+  position="22 4.5 -35"
+  scale="14 14 14"
+  text="color: #ffffff; width: 20; value: align: center; tabSize: 4; alphaTest: 0.5; align: center"
   score-keeper>
 </a-entity>
 <a-entity
-  position="-7.5 4 -40"
-  scale="10 10 10"
-  text="color: #787878; width: 20; value: SCORE; tabSize: 4; alphaTest: 0.5; align: center">
+  position="-6 4.5 -35"
+  scale="14 14 14"
+  text="color: #ffffff; width: 20; value: SCORE; tabSize: 4; alphaTest: 0.5; align: center">
 </a-entity>
 
 
@@ -223,7 +254,7 @@ AFRAME.registerComponent('game-timer', {
 
 <!--Camera-Ship-Gun-->
     <a-camera id="camera" id="head" look-controls wasd-controls="acceleration: 10; wsAxis: y; wsInverted: true" position="0 1 2">
-      <a-entity gltf-model="#Ship" obb-collider position="0 -0.3 -1.5" rotation="-25 180 0" scale="5 5 5" rotation="-20 180 0">
+      <a-entity gltf-model="#Eye" obb-collider position="0 -0.3 -1.5" rotation="-25 180 0" scale="0.25 0.25 0.25" rotation="-20 180 0" material="emissiveIntensity: 5" animation__press="property: scale; from: 0.25 0.25 0.25; to: 0.35 0.15 0.25; dir: reverse; dur: 100; easing: easeInQuad; startEvents: mousedown">
         <a-entity id="gun" shooter click-to-shoot rotation="-15 180 0"></a-entity>
         <a-cursor color="white"></a-cursor>
       </a-entity>
@@ -231,8 +262,6 @@ AFRAME.registerComponent('game-timer', {
       <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
       <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
     </a-camera>
-
-    <a-entity gltf-model="#SkyBall" scale="50 50 50" rotation="0 90 0" ></a-entity>
 
   </a-scene>
 </body>
