@@ -1,6 +1,6 @@
 <head>
 
-  <title>Attention </title>
+  <title>AttentionArmada</title>
 <!--A-Frame-->
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
 <!--A-Frame Extras-->
@@ -13,6 +13,10 @@
   <script src="aframe-super-shooter-kit.min.js"></script>
 
 
+
+
+<!--Scripts-->
+
 <script>
 AFRAME.registerComponent('click-to-shoot', {
   init: function () {
@@ -21,6 +25,7 @@ AFRAME.registerComponent('click-to-shoot', {
   });
   }
   });
+
 
   // Change color when hit + die + respawn
     AFRAME.registerComponent('hit-handler', {
@@ -99,7 +104,6 @@ AFRAME.registerComponent('click-to-shoot', {
 });
 
 
-
 // Score system
 AFRAME.registerComponent('score-keeper', {
   init: function () {
@@ -171,6 +175,7 @@ AFRAME.registerComponent('game-timer', {
   }
 });
 
+
 //Rotate Sky
 AFRAME.registerComponent('rotate-on-game', {
   schema: {
@@ -197,63 +202,91 @@ AFRAME.registerComponent('rotate-on-game', {
   }
 });
 
+
 </script>
-
-
-
-
-
-
 </head>
+
+
+
 
 <!--Mixins-->
 
-<!--Assets-->
-  <a-entity id="bulletTemplate" bullet geometry="primitive: sphere; radius: 1" material="color: orange"></a-entity>
 
+<!--Assets-->
   <a-asset>
-        <a-asset-item id="SkyBall" src="Objects/SkyBall.glb" scale="1.5 1.5 1.5"></a-asset-item>
-        <a-asset-item id="Eye" src="Objects/Eye.glb"></a-asset-item>
-        <a-asset-item id="Bull" src="Objects/BulletModel.glb" scale="5 5 5"></a-asset-item>
+    <a-asset-item id="ClckFc" src="Objects/AlarmFace.glb" scale="1"></a-asset-item>
+    <a-asset-item id="ClckRm" src="Objects/AlarmRim.glb" scale="1"></a-asset-item>
+    <a-asset-item id="SkyBall" src="Objects/SkyBall.glb" scale="1.5 1.5 1.5"></a-asset-item>
+    <a-asset-item id="Eye" src="Objects/Eye.glb"></a-asset-item>
+    <a-asset-item id="Bull" src="Objects/BulletModel.glb" scale="5 5 5"></a-asset-item>
   </a-asset>
+
+
 
 <!--World-->
 <body>
   <a-scene game-timer="duration: 10" environment="preset: starry; ground: noise; groundTexture: none; dressing: none" fog="color: #940000; far: 84">
-  
+
+
+<!--Start-Target-->
+ <a-entity
+    rotation="0 30 0"
+    position="0 1.75 -8"
+    animation="property: position; from: -6 4 -8; to: -6 1.2 -8; dur: 500; easing: linear; loop: true; dir: alternate; easing: easeInQuad">
+    <a-entity 
+      target="" 
+      gltf-model="#ClckRm" 
+      scale="1.5 1.5 1.5"
+      start-game-target
+      animation="property: scale; from: 1 2 1.5; to: 2 1 1.5; dur: 500; easing: linear; loop: true; dir: alternate; easing: easeInQuad">
+      <a-entity id="startTarget" gltf-model="#ClckFc" Scale="1 1 1"></a-entity>
+    </a-entity>
+  </a-entity>
+
+
+
+<!--Sky-->
   <a-entity
   rotate-on-game="duration: 10000">
-    <a-entity gltf-model="#SkyBall" scale="45 45 45" rotation="0 90 0"></a-entity>
+  <a-entity gltf-model="#SkyBall" scale="45 45 45" rotation="180 90 0"></a-entity>
   </a-entity>  
+
+
 
 <!--Score-Text-->
 <a-entity
-  position="22 4.5 -35"
-  scale="14 14 14"
+  position="18 27.8 -22.4"
+  scale="12 12 12"
   text="color: #ffffff; width: 20; value: align: center; tabSize: 4; alphaTest: 0.5; align: center"
+  rotation="42.5 0 0"
   score-keeper>
 </a-entity>
-<a-entity
-  position="-6 4.5 -35"
-  scale="14 14 14"
-  text="color: #ffffff; width: 20; value: SCORE; tabSize: 4; alphaTest: 0.5; align: center">
+<a-entity 
+ position="-6 27.8 -22.4" 
+ scale="12 12 12" 
+ text="align: center; color: #ffffff; value: SCORE; width: 20" 
+ rotation="42.5 0 0">
 </a-entity>
 
 
-<!--<a-entity position="0 0.99938 0" text="color: white; value: Get in loser. We're going shooting.; width: 1.5"></a-entity>-->
 
-  <a-entity id="bulletTemplate" bullet gltf-model="#Bull" material="color: orange"></a-entity>
+<!--Bullets-->
+<a-entity id="bulletTemplate" bullet gltf-model="#Bull" material="color: orange"></a-entity>
 
-  <a-entity id="startTarget" target="" geometry="primitive: octahedron" material="emissive: #00ff00; emissiveIntensity: 0.75" position="0 1.5 -8" scale="2 2 2" start-game-target></a-entity>
 
+
+
+<!--Targets-->
   <a-entity class="enemy" target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="0 1.5 -4" hit-handler="points: 1; respawn: false"></a-entity>
   <a-entity class="enemy" target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="2 3.5 -4" hit-handler="points: 1; respawn: false"></a-entity>
   <a-entity class="enemy"  target="" geometry="primitive: octahedron" material="emissive: #00ffff; emissiveIntensity: 0.75" position="-2 3.5 -4" hit-handler="points: 1; respawn: false"></a-entity>
   <a-entity class="enemy bad" target="" geometry="primitive: octahedron" material="emissive: #ff0000; emissiveIntensity: 0.75" position="4 1.5 -4" hit-handler="points: -1; respawn: true; respawnDelay: 2000"></a-entity>
   <a-entity class="enemy bad" target="" geometry="primitive: octahedron" material="emissive: #ff0000; emissiveIntensity: 0.75" position="-4 1.5 -4" hit-handler="points: -1; respawn: true; respawnDelay: 2000"></a-entity>
 
-<!--Camera-Ship-Gun-->
-    <a-camera id="camera" id="head" look-controls wasd-controls="acceleration: 10; wsAxis: y; wsInverted: true" position="0 1 2">
+
+
+<!--Camera-Eye-Gun-->
+    <a-camera id="camera" id="head" look-controls wasd-controls="enabled: false" position="0 2 2">
       <a-entity gltf-model="#Eye" obb-collider position="0 -0.3 -1.5" rotation="-25 180 0" scale="0.25 0.25 0.25" rotation="-20 180 0" material="emissiveIntensity: 5" animation__press="property: scale; from: 0.25 0.25 0.25; to: 0.35 0.15 0.25; dir: reverse; dur: 100; easing: easeInQuad; startEvents: mousedown">
         <a-entity id="gun" shooter click-to-shoot rotation="-15 180 0"></a-entity>
         <a-cursor color="white"></a-cursor>
@@ -263,5 +296,8 @@ AFRAME.registerComponent('rotate-on-game', {
       <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
     </a-camera>
 
+
+
+  
   </a-scene>
 </body>
