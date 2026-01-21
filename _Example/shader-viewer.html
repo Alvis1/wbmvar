@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shader Viewer</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <script src="shaders/shaders.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; }
+        .a-enter-vr-button { display: none !important; }
+    </style>
+</head>
+<body>
+    <a-scene embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+        <!-- Row 1 -->
+        <a-sphere position="-3 2 -6" radius="0.8" material="shader: water; color: #437F97; opacity: 0.8"></a-sphere>
+        <a-sphere position="-1 2 -6" radius="0.8" material="shader: katona-shader"></a-sphere>
+        <a-sphere position="1 2 -6" radius="0.8" material="shader: star-shader"></a-sphere>
+        <a-sphere position="3 2 -6" radius="0.8" material="shader: fusion-sun-shader"></a-sphere>
+        
+        <!-- Row 2 -->
+        <a-sphere position="-3 0 -6" radius="0.8" material="shader: sunray-cloud-shader"></a-sphere>
+        <a-sphere position="-1 0 -6" radius="0.8" material="shader: snake-shader"></a-sphere>
+        <a-sphere position="1 0 -6" radius="0.8" material="shader: peters-shader"></a-sphere>
+        <a-sphere position="3 0 -6" radius="0.8" material="shader: kranidiotis-shader"></a-sphere>
+        
+        <!-- Row 3 -->
+        <a-sphere position="-3 -2 -6" radius="0.8" material="shader: dejus-shader"></a-sphere>
+        <a-sphere position="-1 -2 -6" radius="0.8" material="shader: matcap-shader"></a-sphere>
+        <a-sphere position="1 -2 -6" radius="0.8" material="shader: diamantides-shader"></a-sphere>
+        <a-box position="3 -2 -6" width="1.2" height="1.2" depth="0.1" 
+               material="shader: wave-shader; amplitude: 0.1; frequency: 10; speed: 2"></a-box>
+        
+        <a-sky color="#111"></a-sky>
+    </a-scene>
+</body>
+</html>

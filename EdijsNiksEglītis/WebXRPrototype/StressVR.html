@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
+
+    <script>
+      // Global vectors to prevent memory leaks in the tick loop
+      const _v1 = new THREE.Vector3();
+      const _v2 = new THREE.Vector3();
+
+      AFRAME.registerComponent("look-at-camera", {
+        schema: {
+          enabled: { type: "boolean", default: true },
+        },
+        tick: function () {
+          // Optimization: Stop processing if disabled or if the parent world is shrinking/hidden
+          if (
+            !this.data.enabled ||
+            this.el.object3D.visible === false ||
+            this.el.object3D.parent.scale.x < 0.1
+          )
+            return;
+
+          const camera = document.querySelector("[camera]");
+          if (!camera) return;
+
+          camera.object3D.getWorldPosition(_v1);
+          // Look at camera
+          this.el.object3D.lookAt(_v1);
+        },
+      });
+
+      AFRAME.registerComponent("hover-scale-position", {
+        schema: {
+          hoverDistance: { type: "number", default: 1 },
+          normalScale: { type: "vec3", default: { x: 1, y: 1, z: 1 } },
+          hoverScale: { type: "vec3", default: { x: 2.5, y: 2.5, z: 2.5 } },
+        },
+        init: function () {
+          this.originalPosition = this.el.object3D.position.clone();
+
+          this.el.addEventListener("mouseenter", () => {
+            const camera = document.querySelector("[camera]");
+            if (!camera) return;
+
+            camera.object3D.getWorldPosition(_v1);
+            this.el.object3D.getWorldPosition(_v2);
+
+            const direction = new THREE.Vector3()
+              .subVectors(_v1, _v2)
+              .normalize();
+            const newPos = this.originalPosition
+              .clone()
+              .add(direction.multiplyScalar(this.data.hoverDistance));
+
+            this.el.setAttribute("animation__position", {
+              property: "position",
+              to: `${newPos.x} ${newPos.y} ${newPos.z}`,
+              dur: 200,
+              easing: "easeOutQuad",
+            });
+
+            this.el.setAttribute("animation__scale", {
+              property: "scale",
+              to: `${this.data.hoverScale.x} ${this.data.hoverScale.y} ${this.data.hoverScale.z}`,
+              dur: 200,
+              easing: "easeOutQuad",
+            });
+          });
+
+          this.el.addEventListener("mouseleave", () => {
+            this.el.setAttribute("animation__position", {
+              property: "position",
+              to: `${this.originalPosition.x} ${this.originalPosition.y} ${this.originalPosition.z}`,
+              dur: 200,
+              easing: "easeOutQuad",
+            });
+
+            this.el.setAttribute("animation__scale", {
+              property: "scale",
+              to: `${this.data.normalScale.x} ${this.data.normalScale.y} ${this.data.normalScale.z}`,
+              dur: 200,
+              easing: "easeOutQuad",
+            });
+          });
+        },
+      });
+
+      AFRAME.registerShader("breathing-orb", {
+        schema: {
+          color: { type: "color", default: "#81C784", is: "uniform" },
+          emissive: { type: "color", default: "#81C784", is: "uniform" },
+          intensity: { type: "number", default: 0.3, is: "uniform" },
+          timeMsec: { type: "time", is: "uniform" },
+        },
+        vertexShader: `
+          varying vec3 vNormal;
+          varying vec3 vPosition;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vPosition = position;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 color;
+          uniform vec3 emissive;
+          uniform float intensity;
+          uniform float timeMsec;
+          varying vec3 vNormal;
+          varying vec3 vPosition;
+          void main() {
+            vec3 viewDirection = normalize(cameraPosition - vPosition);
+            float fresnel = pow(1.0 - dot(vNormal, viewDirection), 3.0);
+            float pulse = sin(timeMsec * 0.002) * 0.5 + 0.5;
+            vec3 finalColor = color + emissive * intensity * (1.0 + fresnel * 2.0);
+            finalColor += vec3(pulse * 0.2);
+            gl_FragColor = vec4(finalColor, 1.0);
+          }
+        `,
+      });
+    </script>
+  </head>
+  <body>
+    <a-scene>
+      <a-assets>
+        <img id="sky" src="assets/forrest2-360.jpg" crossorigin="anonymous" />
+        <img
+          id="skyWinter"
+          src="assets/winterSky.jpg"
+          crossorigin="anonymous"
+        />
+        <img
+          id="floor"
+          src="assets/colorful-grass-texture-background.jpg"
+          crossorigin="anonymous"
+        />
+        <audio
+          id="mainWorldMusic"
+          src="assets/forest-wind-with-birds-singing-364368.mp3"
+          preload="auto"
+        ></audio>
+        <audio
+          id="methodWorldMusic"
+          src="assets/forest-461593.mp3"
+          preload="auto"
+          loop
+        ></audio>
+
+        <a-asset-item id="Tree" src="objects/Trees.glb"></a-asset-item>
+        <a-asset-item
+          id="floorWinter"
+          src="objects/floorWinter.glb"
+        ></a-asset-item>
+        <a-asset-item
+          id="TreeStump"
+          src="objects/Tree stump.glb"
+        ></a-asset-item>
+        <a-asset-item id="Tree7" src="objects/tree9.glb"></a-asset-item>
+
+        <!-- Tree billboard images with transparency -->
+        <img
+          id="tree1"
+          src="assets/winterTreeSprite-removebg.png"
+          crossorigin="anonymous"
+        />
+        <img
+          id="tree2"
+          src="assets/winterTreeSprite-removebg.png"
+          crossorigin="anonymous"
+        />
+        <img
+          id="tree3"
+          src="assets/treeSprite1-removebg.png"
+          crossorigin="anonymous"
+        />
+        <img
+          id="winterTree"
+          src="assets/winterTreeSprite-removebg.png"
+          crossorigin="anonymous"
+        />
+        <img id="tree4" src="assets/tree2.png" crossorigin="anonymous" />
+        <img
+          id="tree5"
+          src="assets/vecteezy_a-green-wide-tree.png"
+          crossorigin="anonymous"
+        />
+        <img
+          id="tree6"
+          src="assets/vecteezy_a-large-green-oak-tree.png"
+          crossorigin="anonymous"
+        />
+        <img
+          id="tree7"
+          src="assets/vecteezy_isolated-trees.png"
+          crossorigin="anonymous"
+        />
+      </a-assets>
+
+      <a-entity id="MainWorld" visible="true">
+        <a-sky src="#sky" position="0 150 0"></a-sky>
+
+        <a-entity
+          id="textStump"
+          position="0.63 1.5223 -6.16"
+          text="color: black; value: Click the stump to start learning!"
+          rotation="9.807 0 0"
+          scale="3 5 2"
+          visible="false"
+        ></a-entity>
+
+        <!-- Billboard tree sprites instead of 3D models -->
+
+        <a-plane
+          src="#tree4"
+          width="3.5"
+          height="4.5"
+          position="-3 7.71538 14.77511"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="7 4 2"
+          id="normalTree"
+          rotation="0 -21.194281799684283 0"
+        ></a-plane>
+
+        <a-plane
+          src="#tree6"
+          width="2.5"
+          height="3.5"
+          position="1 8.21527 -25.16792"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="5 5 1"
+          id="treeFront"
+        ></a-plane>
+        <a-plane
+          src="#tree6"
+          width="2.5"
+          height="3.5"
+          position="8.60274 8.1272 -15"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          rotation="0 135.07651907547697 0"
+          scale="5 5 1"
+          id="bigTree"
+        ></a-plane>
+        <a-plane
+          src="#tree6"
+          width="2.5"
+          height="3.5"
+          position="-8.13185 11.41197 -13.08602"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          rotation="0 -131.3127593192626 0"
+          scale="7 7 1"
+          id="treeBig2"
+        ></a-plane>
+        <a-plane
+          src="#tree4"
+          width="3.5"
+          height="4.5"
+          position="13.98061 5.68445 15.63235"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="7 3 2"
+          id="normalTree-2"
+          rotation="-0.4394586288653414 38.488439887913046 -0.5500394833255903"
+        ></a-plane>
+        <a-plane
+          src="#tree4"
+          width="3.5"
+          height="4.5"
+          position="-9.93837 5.78657 3.45258"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="3 3 2"
+          id="normalTree-3"
+          rotation="0 -39.40345348673697 0"
+        ></a-plane>
+        <a-plane
+          src="#tree6"
+          width="2.5"
+          height="3.5"
+          position="-8.13185 11.41197 -2.20805"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          rotation="0 -76.55632875420008 0"
+          scale="7 7 1"
+          id="treeBig2-2"
+        ></a-plane>
+        <a-plane
+          src="#tree6"
+          width="2.5"
+          height="3.5"
+          position="15.13563 8.1272 0.80008"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          rotation="0 77.79334463388753 0"
+          scale="5 5 1"
+          id="bigTree-2"
+        ></a-plane>
+        <!---Floor-->
+        <a-plane
+          position="0 0 0"
+          rotation="-90 0 0"
+          width="50"
+          height="50"
+          material="src: #floor; repeat: 20 20; roughness: 1"
+        ></a-plane>
+
+        <a-entity
+          id="Stump"
+          gltf-model="#TreeStump"
+          position="0.18 0 -7.16"
+          rotation="0 28 0"
+          scale="0.3 0.2 0.3"
+          class="clickable"
+          event-set__enter="_event: mouseenter; _target: #textStump; visible: true"
+          event-set__leave="_event: mouseleave; _target: #textStump; visible: false"
+        ></a-entity>
+
+        <a-entity
+          id="mainWorldAudio"
+          sound="src: #mainWorldMusic; autoplay: false; loop: true; volume: 0.5"
+        ></a-entity>
+      </a-entity>
+
+      <a-entity id="methodWorld" scale="0.0001 0.0001 0.0001" visible="false">
+        <a-entity gltf-model="#floorWinter" position="-52 -2 168"></a-entity>
+
+        <!-- Billboard tree sprites instead of 3D models -->
+        <a-plane
+          src="#tree1"
+          width="3"
+          height="4"
+          position="-5 2 -8"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          rotation="0 43.30300424039736 0"
+        ></a-plane>
+
+        <a-plane
+          src="#tree2"
+          width="4"
+          height="5"
+          position="6 2.5 -10"
+          billboard
+          material="transparent: true; alphaTest: 0.5; side: double"
+        ></a-plane>
+
+        <a-plane
+          src="#tree1"
+          width="2.5"
+          height="3.5"
+          position="8 1.75 -15"
+          billboard
+          material="transparent: true; alphaTest: 0.5; side: double"
+        ></a-plane>
+        <a-plane
+          src="#tree2"
+          width="4"
+          height="5"
+          position="6 3.84009 9.18269"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="2 2 2"
+          id="treeWinter"
+        ></a-plane>
+        <a-plane
+          src="#tree2"
+          width="4"
+          height="5"
+          position="-6.65526 4.89928 20.8904"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="2 2 2"
+          id="treeWinter-2"
+        ></a-plane>
+        <a-plane
+          src="#tree2"
+          width="4"
+          height="5"
+          position="-17.59475 4.59144 1.33047"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="2 2 2"
+          id="treeWinter-3"
+          rotation="0 -66.5673825538893 0"
+        ></a-plane>
+        <a-plane
+          src="#tree2"
+          width="4"
+          height="5"
+          position="18.06973 3.84009 3.36398"
+          billboard=""
+          material="alphaTest: 0.5; side: double; transparent: true"
+          scale="2 2 2"
+          id="treeWinter-4"
+          rotation="0 76.31625943804026 0"
+        ></a-plane>
+
+        <a-plane
+          id="btnStart"
+          position="-0.8 1 -1.5"
+          width="0.4"
+          height="0.2"
+          material="color: #4CAF50"
+          text="value: Start; align: center; color: white"
+          class="clickable"
+          look-at-camera
+          hover-scale-position="hoverDistance: 0.4"
+        ></a-plane>
+        <a-plane
+          id="btnReset"
+          position="-0.2 1 -1.5"
+          width="0.4"
+          height="0.2"
+          material="color: #FFC107"
+          text="value: Reset; align: center; color: white"
+          class="clickable"
+          look-at-camera
+          hover-scale-position="hoverDistance: 0.4"
+        ></a-plane>
+        <a-plane
+          id="btnReload"
+          position="0.4 1 -1.5"
+          width="0.4"
+          height="0.2"
+          material="color: #2196F3"
+          text="value: Reload; align: center; color: white"
+          class="clickable"
+          look-at-camera
+          hover-scale-position="hoverDistance: 0.4"
+        ></a-plane>
+        <a-plane
+          id="btnExit"
+          position="1.0 1 -1.5"
+          width="0.4"
+          height="0.2"
+          material="color: #F44336"
+          text="value: Exit; align: center; color: white"
+          class="clickable"
+          look-at-camera
+          hover-scale-position="hoverDistance: 0.4"
+        ></a-plane>
+
+        <!-- INSTRUCTION PANEL -->
+        <a-plane
+          id="infoPanel"
+          visible="false"
+          position="1.66 2.37 -1.35"
+          width="1.4"
+          height="0.8"
+          material="opacity: 0.75; color: #000"
+          class="clickable"
+          look-at-camera
+          hover-scale-position="hoverDistance: 0.3; hoverScale: 2 2 2"
+        >
+          <a-text
+            value="This exercise guides slow breathing.\nInhale as the light expands.\nExhale as it contracts.\n\nClick OK to begin."
+            align="center"
+            color="#FFF"
+            width="1.3"
+            position="0 0.15 0.01"
+          ></a-text>
+          <a-plane
+            id="btnOk"
+            position="0 -0.25 0.01"
+            width="0.3"
+            height="0.15"
+            material="color: #4CAF50"
+            text="align: center; color: white; value: OK"
+            class="clickable"
+          ></a-plane>
+        </a-plane>
+
+        <a-sphere
+          id="breathOrb"
+          position="0 2 -2"
+          radius="0.4"
+          material="shader: breathing-orb; color: #81C784; emissive: #81C784; intensity: 0.3"
+        ></a-sphere>
+
+        <!-- Progress ring around orb -->
+        <a-ring
+          id="progressRing"
+          position="0 2 -2"
+          radius-inner="0.54"
+          radius-outer="0.58"
+          theta-start="0"
+          theta-length="0"
+          rotation="0 0 0"
+          material="color: #black; opacity: 1; side: double"
+        ></a-ring>
+
+        <!-- Max size indicator ring (ghosted) -->
+        <a-ring
+          id="maxRing"
+          position="0 2 -2"
+          radius-inner="0.54"
+          radius-outer="0.58"
+          rotation="0 0 0"
+          material="color: #FFFFFF; opacity: 1; side: double"
+        ></a-ring>
+        <!-- CONGRATS PANEL -->
+        <a-plane
+          id="congratsPanel"
+          visible="false"
+          position="-2.67 1.72 -1"
+          width="1.2"
+          height="0.6"
+          material="opacity: 0.8; color: #000"
+          class="clickable"
+          look-at-camera
+          hover-scale-position="hoverDistance: 0.3; hoverScale: 2 2 2"
+        >
+          <a-text
+            value="Well done!\nYou completed the breathing exercise."
+            align="center"
+            color="#FFF"
+            width="1.1"
+            position="0 0.1 0.01"
+          ></a-text>
+          <a-plane
+            id="btnCongratsRepeat"
+            position="-0.25 -0.2 0.01"
+            width="0.35"
+            height="0.15"
+            material="color: #4CAF50"
+            text="align: center; color: white; value: Repeat"
+            class="clickable"
+          ></a-plane>
+          <a-plane
+            id="btnCongratsExit"
+            position="0.25 -0.2 0.01"
+            width="0.35"
+            height="0.15"
+            material="color: #F44336"
+            text="align: center; color: white; value: Exit"
+            class="clickable"
+          ></a-plane>
+        </a-plane>
+
+        <a-entity
+          id="methodWorldAudio"
+          sound="src: #methodWorldMusic; autoplay: false; loop: true; volume: 0.5"
+        ></a-entity>
+        <a-sky src="#skyWinter"></a-sky>
+      </a-entity>
+
+      <a-entity id="cameraRig" position="0 0 -4.7">
+        <a-entity id="head" camera look-controls position="0 1.6 0">
+          <a-cursor
+            color="white"
+            raycaster="objects: .clickable"
+            fuse="false"
+            fuse-timeout="1500"
+          ></a-cursor>
+        </a-entity>
+      </a-entity>
+    </a-scene>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        setTimeout(initApp, 1000);
+      });
+
+      function initApp() {
+        const orb = document.querySelector("#breathOrb");
+        const info = document.querySelector("#infoPanel");
+        const congrats = document.querySelector("#congratsPanel");
+        const mainWorld = document.querySelector("#MainWorld");
+        const methodWorld = document.querySelector("#methodWorld");
+        const stump = document.querySelector("#Stump");
+        const mainWorldAudio = document.querySelector("#mainWorldAudio");
+        const methodWorldAudio = document.querySelector("#methodWorldAudio");
+
+        let cycles = 0;
+        let active = false;
+        let interval;
+
+        // Init Audio
+        setTimeout(() => {
+          if (mainWorldAudio.components.sound)
+            mainWorldAudio.components.sound.playSound();
+        }, 2000);
+
+        function fadeAudio(audioEntity, targetVol, dur) {
+          const sound = audioEntity.components.sound;
+          if (!sound || !sound.isPlaying) return;
+          audioEntity.setAttribute("animation__fade", {
+            property: "sound.volume",
+            to: targetVol,
+            dur: dur,
+            easing: "linear",
+          });
+        }
+
+        function inhale() {
+          orb.setAttribute("animation__scale", {
+            property: "scale",
+            to: "1.4 1.4 1.4",
+            dur: 6000,
+            easing: "easeInOutSine",
+          });
+          orb.setAttribute("material", {
+            color: "#FFD700",
+            emissive: "#FFD700",
+            intensity: 0.8,
+          });
+          fadeAudio(methodWorldAudio, 0.2, 6000);
+        }
+
+        function exhale() {
+          orb.setAttribute("animation__scale", {
+            property: "scale",
+            to: "1 1 1",
+            dur: 6000,
+            easing: "easeInOutSine",
+          });
+          orb.setAttribute("material", {
+            color: "#81C784",
+            emissive: "#81C784",
+            intensity: 0.3,
+          });
+          fadeAudio(methodWorldAudio, 0.5, 6000);
+        }
+
+        function startBreathing() {
+          if (active) return;
+          active = true;
+          cycles = 0;
+          info.setAttribute("visible", false);
+          inhale();
+          setTimeout(() => {
+            exhale();
+            cycles++;
+          }, 6000);
+
+          interval = setInterval(() => {
+            inhale();
+            setTimeout(() => {
+              exhale();
+              cycles++;
+              if (cycles >= 1) {
+                clearInterval(interval);
+                active = false;
+                setTimeout(() => {
+                  congrats.setAttribute("visible", true);
+                }, 6500);
+              }
+            }, 6000);
+          }, 12000);
+        }
+
+        function resetExercise() {
+          if (interval) clearInterval(interval);
+          active = false;
+          orb.removeAttribute("animation__scale");
+          orb.setAttribute("scale", "1 1 1");
+          info.setAttribute("visible", false);
+          congrats.setAttribute("visible", false);
+          fadeAudio(methodWorldAudio, 0.5, 500);
+        }
+
+        function transitionToMethodWorld() {
+          methodWorld.setAttribute("visible", true);
+          stump.setAttribute("visible", false);
+          fadeAudio(mainWorldAudio, 0, 1000);
+
+          methodWorld.setAttribute("animation", {
+            property: "scale",
+            from: "0.0001 0.0001 0.0001",
+            to: "1 1 1",
+            dur: 1500,
+            easing: "easeInOutCirc",
+          });
+
+          setTimeout(() => {
+            mainWorld.setAttribute("visible", false);
+            if (methodWorldAudio.components.sound)
+              methodWorldAudio.components.sound.playSound();
+            fadeAudio(methodWorldAudio, 0.5, 1000);
+          }, 1500);
+        }
+
+        function transitionToMainWorld() {
+          resetExercise();
+          mainWorld.setAttribute("visible", true);
+          fadeAudio(methodWorldAudio, 0, 1000);
+
+          methodWorld.setAttribute("animation", {
+            property: "scale",
+            to: "0.0001 0.0001 0.0001",
+            dur: 1500,
+            easing: "easeInOutCirc",
+          });
+
+          setTimeout(() => {
+            methodWorld.setAttribute("visible", false);
+            stump.setAttribute("visible", true);
+            if (mainWorldAudio.components.sound)
+              mainWorldAudio.components.sound.playSound();
+            fadeAudio(mainWorldAudio, 0.5, 1000);
+          }, 1500);
+        }
+
+        // Listeners
+        document
+          .querySelector("#btnStart")
+          .addEventListener("click", () => info.setAttribute("visible", true));
+        document
+          .querySelector("#btnOk")
+          .addEventListener("click", startBreathing);
+        document
+          .querySelector("#btnReset")
+          .addEventListener("click", resetExercise);
+        document
+          .querySelector("#btnReload")
+          .addEventListener("click", () => window.location.reload());
+        document
+          .querySelector("#btnExit")
+          .addEventListener("click", transitionToMainWorld);
+        document
+          .querySelector("#btnCongratsRepeat")
+          .addEventListener("click", () => {
+            congrats.setAttribute("visible", false);
+            info.setAttribute("visible", true);
+          });
+        document
+          .querySelector("#btnCongratsExit")
+          .addEventListener("click", transitionToMainWorld);
+        stump.addEventListener("click", transitionToMethodWorld);
+      }
+    </script>
+  </body>
+</html>

@@ -1,17 +1,57 @@
 {
   "EdijsNiksEglītis": [
     {
+      "name": "StressVR.html",
+      "path": "EdijsNiksEglītis/WebXRPrototype/StressVR.html"
+    },
+    {
       "name": "index.html",
       "path": "EdijsNiksEglītis/index.html"
+    },
+    {
+      "name": "task2.html",
+      "path": "EdijsNiksEglītis/task2.html"
+    }
+  ],
+  "HuguesLejeune": [
+    {
+      "name": "index.html",
+      "path": "HuguesLejeune/index.html"
+    },
+    {
+      "name": "project.html",
+      "path": "HuguesLejeune/project.html"
+    }
+  ],
+  "IevaGintere": [
+    {
+      "name": "index.html",
+      "path": "IevaGintere/Dem/index.html"
+    },
+    {
+      "name": "index.html",
+      "path": "IevaGintere/index.html"
     }
   ],
   "LeoMaurel": [
     {
+      "name": "stellar_nomad.html",
+      "path": "LeoMaurel/stellar_nomad.html"
+    },
+    {
       "name": "index.html",
-      "path": "LeoMaurel/index.html"
+      "path": "LeoMaurel/task2/index.html"
     }
   ],
   "LianaOzolina": [
+    {
+      "name": "AttentionArmada.html",
+      "path": "LianaOzolina/Armada/AttentionArmada.html"
+    },
+    {
+      "name": "index.html",
+      "path": "LianaOzolina/ShooterTest/index.html"
+    },
     {
       "name": "index.html",
       "path": "LianaOzolina/index.html"
@@ -21,15 +61,35 @@
     {
       "name": "Index.html",
       "path": "MarisBulats/Index.html"
+    },
+    {
+      "name": "Index_v1.html",
+      "path": "MarisBulats/Index_v1.html"
     }
   ],
   "MaryiaBrauer": [
     {
+      "name": "crisiskit.html",
+      "path": "MaryiaBrauer/crisiskit.html"
+    },
+    {
       "name": "index.html",
       "path": "MaryiaBrauer/index.html"
+    },
+    {
+      "name": "task2.html",
+      "path": "MaryiaBrauer/task2.html"
+    },
+    {
+      "name": "task2_01.html",
+      "path": "MaryiaBrauer/task2_01.html"
     }
   ],
   "OtoJauja": [
+    {
+      "name": "DrumVR.html",
+      "path": "OtoJauja/DrumVR.html"
+    },
     {
       "name": "index.html",
       "path": "OtoJauja/index.html"
@@ -41,8 +101,20 @@
       "path": "_Example/01_mechanism.html"
     },
     {
-      "name": "02_rooms_functional.html",
-      "path": "_Example/02_rooms_functional.html"
+      "name": "02_rooms_1functional.html",
+      "path": "_Example/02_rooms_1functional.html"
+    },
+    {
+      "name": "02_rooms_2visualaudio.html",
+      "path": "_Example/02_rooms_2visualaudio.html"
+    },
+    {
+      "name": "index.html",
+      "path": "_Example/index.html"
+    },
+    {
+      "name": "shader-viewer.html",
+      "path": "_Example/shader-viewer.html"
     }
   ]
 }
