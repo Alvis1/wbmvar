@@ -3,6 +3,8 @@ AFRAME.registerComponent('toggle-click-animation', {
         property: {type: 'string', default: ''},
         from: {type: 'string', default: ''},
         to: {type: 'string', default: ''},
+        dur: {type: 'number', default: 500},
+        easing: {type: 'string', default: 'easeInOutCirc'},
     },
 
     init() {
@@ -13,7 +15,7 @@ AFRAME.registerComponent('toggle-click-animation', {
 
             this.el.setAttribute(
                 'animation',
-                `property: ${this.data.property}; to: ${to}`,
+                `property: ${this.data.property}; to: ${to}; dur: ${this.data.dur}; easing: ${this.data.easing}`,
             );
             this.toggled = !this.toggled;
         });
