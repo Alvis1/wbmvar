@@ -4,12 +4,15 @@ AFRAME.registerComponent("rotate-to-follow-y", {
     },
 
     tick() {
-        const target3D = this.data.target.object3D;
-        const object3D = this.el.object3D;
+        const targetPosition = new THREE.Vector3();
+        const objectPosition = new THREE.Vector3();
 
-        const dx = target3D.position.x - object3D.position.x;
-        const dz = target3D.position.z - object3D.position.z;
+        this.data.target.object3D.getWorldPosition(targetPosition);
+        this.el.object3D.getWorldPosition(objectPosition);
 
-        object3D.rotation.y = Math.atan2(dx, dz);
+        const dx = targetPosition.x - objectPosition.x;
+        const dz = targetPosition.z - objectPosition.z;
+
+        this.el.object3D.rotation.y = Math.atan2(dx, dz);
     },
 });
