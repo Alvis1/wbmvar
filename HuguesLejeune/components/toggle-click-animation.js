@@ -1,4 +1,6 @@
 AFRAME.registerComponent('toggle-click-animation', {
+    multiple: true,
+
     schema: {
         property: {type: 'string', default: ''},
         from: {type: 'string', default: ''},
@@ -23,6 +25,8 @@ AFRAME.registerComponent('toggle-click-animation', {
 });
 
 AFRAME.registerComponent('toggle-click-target-animation', {
+    multiple: true,
+
     schema: {
         target: {type: 'selector'},
         property: {type: 'string', default: ''},
