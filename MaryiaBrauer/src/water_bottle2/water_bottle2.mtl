@@ -1,0 +1,16 @@
+# Blender 4.5.0 MTL File: 'None'
+# www.blender.org
+
+newmtl tripo_mat_179af288-6e8e-4983-8e71-20b19750dc94
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd tripo_node_a5005745-2da4-486b-baaf-76a876fac67b_BaseColor.jpg
+map_Ns waterbottle3dmodel_roughness.JPEG
+map_Pr waterbottle3dmodel_roughness.JPEG
+map_refl waterbottle3dmodel_metallic.JPEG
+map_Pm waterbottle3dmodel_metallic.JPEG
+map_Bump -bm 1.000000 tripo_node_a5005745-2da4-486b-baaf-76a876fac67b_Normal_Bake.jpg

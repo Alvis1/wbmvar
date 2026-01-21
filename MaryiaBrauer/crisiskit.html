@@ -17,7 +17,7 @@
         init: function () {
           this.el.addEventListener('obbcollisionstarted', (e) => {
             const otherEl = e.detail.withEl;
-            if (otherEl && otherEl.id === 'bag') {
+            if (otherEl && otherEl.id === 'backpack') {
               this.el.setAttribute('visible', false);
             }
           });
@@ -101,40 +101,90 @@
         <a-entity id="rightHand" hand-tracking-grab-controls="hand: right"></a-entity>
       </a-entity>
 
-      <!--Equirectangular Image env-->
+      <!--Equirectangular Image env 9 or 5-->
       <a-assets>
-        <img id="room_env" src="./img/room_env4.jpg">
+        <img id="room_env" src="./img/room_env5.jpg"> 
       </a-assets>
       <a-sky src="#room_env"></a-sky>
 
       <!--Table-->
-      <a-box id="table" color="white" position="-0.75 0.5 0" scale="0.7 1 1.5"></a-box>
+      <a-assets>
+        <a-asset-item id="table" src="./src/table/table.obj"></a-asset-item>
+        <a-asset-item id="table-mtl" src="./src/table/table.mtl"></a-asset-item>
+      </a-assets>
+      <a-entity id="table" obj-model="obj: #table; mtl: #table-mtl" position="-0.75 0.42 -0.5" scale="1.7 2 1.5" rotation="0 70 0"></a-entity>
 
+      <a-plane
+        rotation="-90 0 0"
+        width="10"
+        height="10"
+        position="-0.5 0 0"
+        material="color: #ffffff; opacity: 0; transparent: true">
+      </a-plane>
+
+      <a-circle
+        rotation="-90 0 0"
+        radius="0.8"
+        position="-0.75 0.01 -0.5"
+        material="color: black; opacity: 0.25">
+      </a-circle>
+
+      <!--Backpack-->
+      <a-assets>
+        <a-asset-item id="backpack" src="./src/backpack/backpack.obj"></a-asset-item>
+        <a-asset-item id="backpack-mtl" src="./src/backpack/backpack.mtl"></a-asset-item>
+      </a-assets>
+      <a-entity id="backpack" obj-model="obj: #backpack; mtl: #backpack-mtl" position="-0.81629 1.13137 0.17606" scale="0.4 0.4 0.4" rotation="0 -47.33147049796217 0" obb-collider="centerModel: true"></a-entity>      
+      
       <!--Grabbing objects-->
-      <a-box id="cube1" grabbable="hoverEnabled: true; hoverColor: #red;" position="-0.85 1.05 0.6" color="yellow" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" shake-on-bag-touch></a-box>
-      <a-box id="cube2" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.5 1.05 0" color="blue" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" hide-on-bag-touch></a-box>
-      <a-box id="cube3" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.7 1.05 0.2" color="black" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" hide-on-bag-touch></a-box>
-      <a-box id="cube4" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.6 1.05 -0.6" color="pink" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" shake-on-bag-touch></a-box>
-      <a-box id="cube5" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.45 1.05 -0.5" color="green" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #bag" hide-on-bag-touch></a-box>
+      <a-box id="cube1" grabbable="hoverEnabled: true; hoverColor: #red;" position="-0.85 1.05 0.6" color="yellow" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #backpack" shake-on-bag-touch></a-box>
+      <a-box id="cube4" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.6 1.05 -0.6" color="pink" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #backpack" shake-on-bag-touch></a-box>
 
-      <a-box id="bag" position="-0.51 1.1 0.6" color="grey" scale="0.2 0.2 0.2" obb-collider="centerModel: true"></a-box>
+      <!--Water Bottle-->
+      <a-assets>
+        <a-asset-item id="water" src="./src/water_bottle2/water_bottle2.obj"></a-asset-item>
+        <a-asset-item id="water-mtl" src="./src/water_bottle2/water_bottle2.mtl"></a-asset-item>
+      </a-assets>
+      <a-entity id="water_bottle" obj-model="obj: #water; mtl: #water-mtl" position="-0.61542 1.05832 -1.11672" scale="0.137 0.26272 0.12726" grabbable="hoverEnabled: true;" rotation="0 0 0" obb-collider="objects: #backpack" hide-on-bag-touch></a-entity>
+      
+      <!--Documents-->
+      <a-assets>
+        <a-asset-item id="documents" src="./src/documents/documents.obj"></a-asset-item>
+        <a-asset-item id="documents-mtl" src="./src/documents/documents.mtl"></a-asset-item>
+      </a-assets>
+      <a-entity id="documents" obj-model="obj: #documents; mtl: #documents-mtl" position="-0.6858 0.97359 -0.173" scale="0.3 0.25 0.1" grabbable="hoverEnabled: true;" rotation="-75 180 180" obb-collider="objects: #backpack" hide-on-bag-touch></a-entity>
+      
+      <!--Food-->
+      <a-assets>
+        <a-asset-item id="food" src="./src/food/food.obj"></a-asset-item>
+        <a-asset-item id="food-mtl" src="./src/food/food.mtl"></a-asset-item>
+      </a-assets>
+      <a-entity id="food" obj-model="obj: #food; mtl: #food-mtl" position="-1.03414 0.98759 -0.28227" scale="0.15435 0.21969 0.16536" grabbable="hoverEnabled: true;" rotation="0 0 0" obb-collider="objects: #backpack" hide-on-bag-touch></a-entity>
 
-      <!-- <a-assets>
-        <a-asset-item id="water" src="./src/water_bottle/water_bottle.obj"></a-asset-item>
-        <a-asset-item id="water-mtl" src="./src/water_bottle/water_bottle.mtl"></a-asset-item>
-      </a-assets> -->
+      <!--First-aid-kit-->
+      <a-assets>
+        <a-asset-item id="first-aid-kit" src="./src/first-aid-kit/first-aid-kit.obj"></a-asset-item>
+        <a-asset-item id="first-aid-kit-mtl" src="./src/first-aid-kit/first-aid-kit.mtl"></a-asset-item>
+      </a-assets>
+      <a-entity id="first-aid-kit" obj-model="obj: #first-aid-kit; mtl: #first-aid-kit-mtl" position="-0.51693 1.00945 -0.84182" scale="0.12336 0.18346 0.12865" grabbable="hoverEnabled: true;" rotation="0 0 0" obb-collider="objects: #backpack" hide-on-bag-touch></a-entity>
 
-      <!-- <a-entity obj-model="obj: #water; mtl: #water-mtl" position="-0.5 1.05 0"></a-entity> -->
+      <!--Radio-->
+      <a-assets>
+        <a-asset-item id="radio" src="./src/radio/radio.obj"></a-asset-item>
+        <a-asset-item id="radio-mtl" src="./src/radio/radio.mtl"></a-asset-item>
+      </a-assets>
+      <a-entity id="radio" obj-model="obj: #radio; mtl: #radio-mtl" position="-0.70322 0.99049 -0.44217" scale="0.12 0.12352 0.16798" grabbable="hoverEnabled: true;" rotation="0 -17.649391921209876 0" obb-collider="objects: #backpack" hide-on-bag-touch></a-entity>
+
 
       <a-entity id="cube-ui" position="0 1.8 -1.2">
-        <a-plane width="0.6" height="0.5" color="#222" opacity="0.8"></a-plane>
+        <a-plane width="1" height="0.7" color="#222" opacity="0.8"></a-plane>
           <a-text
             id="cube-ui-text"
-            value="[ ] blue cube\n[ ] green cube \n[ ] black cube"
+            value="[ ] Documents\n[ ] Food & Snacks\n[ ] Water\n[ ] First-aid kit & Essential medicine\n[ ] Radio\n[ ] Extra batteries\n[ ] Phone Charging devices & Power bank\n[ ] Warm clothes\n[ ] Radio\n[ ] Cash\n[ ] Multitool / knife\n[ ] Notebook\n[ ] Pen, pensil"
             color="white"
             width="1"
             align="left"
-            position="-0.28 0.18 0.01">
+            position="-0.42 0 0.01">
           </a-text>
       </a-entity>
       
