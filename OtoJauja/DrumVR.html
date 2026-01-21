@@ -42,6 +42,10 @@
           id="beethoven5th_timpani_4"
           src="images/beethoven5th_timpani4.jpg"
         />
+        <img id="wood_floor" src="images/wood_floor.jpg" />
+        <img id="begin_button" src="images/begin_button.png" />
+        <img id="restart_button" src="images/restart_button.png" />
+        <img id="button" src="images/button.png" />
         <audio id="timpani-hit" src="sounds/timpani_hit.mp3"></audio>
         <audio
           id="beethoven5th"
@@ -56,113 +60,231 @@
         ></video>
       </assets>
 
-      <!--Menu Buttons-->
-      <a-entity
+      <!--Menu UI-->
+      <a-plane
         id="startButton"
+        class="clickable"
         geometry="primitive: plane; width: 1.2; height: 0.4"
-        material="color: #fccf23"
+        src="#begin_button"
         position="0 1.6 -1.5"
-        text="value: Begin; align: center; width: 4; color: black"
         start-game
-      ></a-entity>
-      <a-entity
-        id="restartButton"
-        geometry="primitive: plane; width: 1.2; height: 0.4"
-        material="color: #fccf23"
-        position="0 1.6 -1.5"
-        text="value: Restart; align: center; width: 4; color: black"
+        visible="true"
+      ></a-plane>
+
+      <a-entity id="GuideIU" visible="true">
+        <a-circle
+          id="GuideIU"
+          position="0.9409 1.64951 -1.32691"
+          rotation="0 -45 0"
+          radius="0.1"
+          material="color: #00ff66"
+          text="align: center; color: white; value: G"
+        >
+        </a-circle>
+        <a-entity
+          id="GuideIU"
+          position="1.12778 1.65 -1.14708"
+          rotation="0 -45 0"
+          scale="2 2 1"
+          text="align: center; color: white; value: The right drum; wrapCount: 90"
+        ></a-entity>
+        <a-circle
+          id="GuideIU"
+          position="0.9409 1.43951 -1.32691"
+          rotation="0 -45 0"
+          radius="0.1"
+          material="color: #3399ff"
+          text="align: center; color: white; value: C"
+        >
+        </a-circle>
+        <a-entity
+          id="GuideIU"
+          position="1.12778 1.44 -1.14708"
+          rotation="0 -45 0"
+          scale="2 2 1"
+          text="align: center; color: white; value: The left drum; wrapCount: 90"
+        ></a-entity>
+        <a-entity
+          id="GuideIU"
+          position="1.12778 1.84 -1.14708"
+          rotation="0 -45 0"
+          scale="2 2 1"
+          text="align: center; color: white; value: Each drum lights up when it's time to hit it
+
+          Learn the correct drums!; wrapCount: 90"
+        ></a-entity>
+      </a-entity>
+
+      <!--Pause Menu-->
+
+      <a-plane
+        id="pauseButton"
+        geometry="height: 0.25; width: 0.6"
+        src="#button"
+        position="0.97159 1.31517 -1.60981"
+        rotation="0 -45 0"
+        text="align: center; color: white; value: Pause"
         visible="false"
-        start-game
-      ></a-entity>
+        pause-game
+      ></a-plane>
+
+      <a-entity id="pauseMenu" visible="false">
+        <a-plane
+          position="0 1.6 -1.5"
+          width="1.4"
+          height="0.8"
+          material="color: #000; opacity: 0.85"
+        ></a-plane>
+
+        <a-plane
+          class=""
+          position="0 1.75 -1.45"
+          width="1"
+          height="0.25"
+          src="#button"
+          text="value: Resume; align: center; color: white"
+          resume-game
+        ></a-plane>
+
+        <a-plane
+          class=""
+          position="0 1.4 -1.45"
+          width="1"
+          height="0.25"
+          src="#button"
+          text="value: Back to Menu; align: center; color: white"
+          return-menu
+        ></a-plane>
+      </a-entity>
+
+      <!--End Menu-->
+
+      <a-entity id="endMenu" visible="false">
+        <a-plane
+          position="0 1.6 -1.5"
+          width="1.6"
+          height="0.9"
+          material="color: #000; opacity: 0.85"
+        ></a-plane>
+
+        <a-entity
+          position="0 1.9 -1.45"
+          text="value: Performance Complete; align: center; color: white; width: 3"
+        ></a-entity>
+
+        <a-plane
+          class=""
+          position="0 1.55 -1.45"
+          width="1"
+          height="0.25"
+          src="#button"
+          text="value: Restart; align: center; color: white"
+          start-game
+        ></a-plane>
+
+        <a-plane
+          class=""
+          position="0 1.25 -1.45"
+          width="1"
+          height="0.25"
+          src="#button"
+          text="value: Back to Menu; align: center; color: white"
+          return-menu
+        ></a-plane>
+      </a-entity>
 
       <!--Timpani-->
       <a-entity
         id="timpani-1"
         gltf-model="#timpani"
-        position="0.62694 0.5 -1.39"
+        position="0.62694 0.4 -1.39"
         obb-collider="centerModel: true"
         sound="on: obbcollisionstarted; poolSize: 10; src: sounds/timpani_hit.mp3"
-        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 0.62694 0.5 -1.39; loop: 1; property: position; startEvents: obbcollisionstarted; to: 0.62694 0.4 -1.39"
-        scale="0.8 0.8 0.8"
+        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 0.62694 0.4 -1.39; loop: 1; property: position; startEvents: obbcollisionstarted; to: 0.62694 0.3 -1.39"
+        rotation="0 -135 0"
       >
       </a-entity>
       <a-circle
         class="hit-circle"
         data-drum="0"
         radius="0.4"
-        position="0.62694 0.87 -1.39"
+        position="0.68895 0.87 -1.45786"
         rotation="-90 0 0"
-        material="color: #ffffff; opacity: 0.25; transparent: true"
+        material="opacity: 0.25; transparent: true; color: #ffffff"
+        scale="0.8 0.8 0.8"
       ></a-circle>
       <a-entity
         id="timpani-2"
         gltf-model="#timpani"
-        position="-0.62694 0.5 -1.39"
+        position="-0.62694 0.4 -1.39"
         obb-collider="centerModel: true"
         sound="on: obbcollisionstarted; poolSize: 10; src: sounds/timpani_hit.mp3"
-        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: -0.62694 0.5 -1.39; loop: 1; property: position; startEvents: obbcollisionstarted; to: -0.62694 0.4 -1.39"
-        scale="0.8 0.8 0.8"
+        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: -0.62694 0.4 -1.39; loop: 1; property: position; startEvents: obbcollisionstarted; to: -0.62694 0.3 -1.39"
+        rotation="0 -45 0"
       >
       </a-entity>
       <a-circle
         class="hit-circle"
         data-drum="1"
         radius="0.4"
-        position="-0.62694 0.87 -1.39"
+        position="-0.68895 0.87 -1.45786"
         rotation="-90 0 0"
         material="color: #ffffff; opacity: 0.25; transparent: true"
+        scale="0.8 0.8 0.8"
       ></a-circle>
       <a-entity
         id="timpani-3"
         gltf-model="#timpani"
-        position="-1.22403 0.5 -0.22061"
+        position="-1.22774 0.4 -0.57285"
         obb-collider="centerModel: true"
         sound="on: obbcollisionstarted; poolSize: 10; src: sounds/timpani_hit.mp3"
-        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: -1.22403 0.5 -0.22061; loop: 1; property: position; startEvents: obbcollisionstarted; to: -1.22403 0.4 -0.22061"
-        scale="0.8 0.8 0.8"
+        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: -1.22774 0.4 -0.57285; loop: 1; property: position; startEvents: obbcollisionstarted; to: -1.22774 0.3 -0.57285"
       >
       </a-entity>
       <a-circle
         class="hit-circle"
         data-drum="2"
         radius="0.4"
-        position="-1.22403 0.87 -0.22061"
+        position="-1.30233 0.87 -0.5675"
         rotation="-90 0 0"
-        material="color: #ffffff; opacity: 0.25; transparent: true"
+        material="opacity: 0.25; transparent: true; color: #ffffff"
+        scale="0.8 0.8 0.8"
       ></a-circle>
       <a-entity
         id="timpani-4"
         gltf-model="#timpani"
-        position="1.22403 0.5 -0.22061"
+        position="1.22774 0.4 -0.57285"
         obb-collider="centerModel: true"
         sound="on: obbcollisionstarted; poolSize: 10; src: sounds/timpani_hit.mp3"
-        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1.22403 0.5 -0.22061; loop: 1; property: position; startEvents: obbcollisionstarted; to: 1.22403 0.4 -0.22061"
-        scale="0.8 0.8 0.8"
+        animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1.22774 0.4 -0.57285; loop: 1; property: position; startEvents: obbcollisionstarted; to: 1.22774 0.3 -0.57285"
+        rotation="0 -180 0"
       >
       </a-entity>
       <a-circle
         class="hit-circle"
         data-drum="3"
         radius="0.4"
-        position="1.22403 .87 -0.22061"
+        position="1.30233 0.87 -0.5675"
         rotation="-90 0 0"
         material="color: #ffffff; opacity: 0.25; transparent: true"
+        scale="0.8 0.8 0.8"
       ></a-circle>
 
       <!--Sheet music-->
       <a-plane
         id="sheetMusic"
+        class="clickable"
         src="#beethoven5th_timpani_1"
-        position="-1.12999 1.41827 -0.94976"
+        position="-0.92496 1.41827 -1.63536"
         rotation="-14.999999999999998 45 0"
         scale="0.5 0.7 0.5"
-        visible="false"
         next-sheet
+        visible="false"
       >
       </a-plane>
       <a-entity
         id="UI-sheetMusic"
-        position="-1.19502 1.81217 -1.01454"
+        position="-0.98969 1.81217 -1.69529"
         rotation="0 45 0"
         scale="2 2 1"
         text="align: center; color: white; value: Click on the sheet to change it; wrapCount: 90"
@@ -173,10 +295,10 @@
       <a-plane
         navmesh
         position="0 0 0"
-        rotation="-90 0 0"
+        rotation="-90 90 0"
         width="4"
         height="4"
-        color="#664735"
+        src="#wood_floor"
         shadow
       ></a-plane>
       <a-sky id="sky" src="#koncerta-skatuve" rotation="0 -90 0"></a-sky>
@@ -196,7 +318,7 @@
 
       <!--Camera with cursor and hand tracking enabled. Pinch gesture as click event-->
       <a-entity
-        position="0 0 0"
+        position="0 0 -0.3"
         id="cameraRig"
         movement-controls="speed: 1.01; enabled:false"
       >
@@ -206,7 +328,7 @@
           camera="near: 0.1"
           look-controls="reverseMouseDrag: false"
         >
-          <a-cursor color="white"></a-cursor>
+          <a-cursor raycaster="objects: .clickable" color="white"></a-cursor>
         </a-entity>
         <a-entity
           id="leftHand"
@@ -221,50 +343,166 @@
 
     <script>
       let gameStarted = false;
+      let isPaused = false;
+
+      function enableClick(el) {
+        if (!el) return;
+        el.classList.add("clickable");
+      }
+
+      function disableClick(el) {
+        if (!el) return;
+        el.classList.remove("clickable");
+      }
 
       AFRAME.registerComponent("start-game", {
         init() {
           this.el.addEventListener("click", () => {
             if (gameStarted) return;
+
             gameStarted = true;
+            isPaused = false;
 
             const video = document.querySelector("#orchestraVideo");
             const sky = document.querySelector("#sky");
 
+            video.currentTime = 0;
             video.play();
 
             sky.setAttribute("src", "#orchestraVideo");
             sky.setAttribute("material", "shader: flat; side: back");
 
+            // UI
             document.querySelector("#sheetMusic").setAttribute("visible", true);
             document
               .querySelector("#UI-sheetMusic")
               .setAttribute("visible", true);
+            document
+              .querySelector("#pauseButton")
+              .setAttribute("visible", true);
 
-            this.el.setAttribute("visible", false);
+            document
+              .querySelector("#startButton")
+              .setAttribute("visible", false);
+            document.querySelector("#GuideIU").setAttribute("visible", false);
+            document.querySelector("#endMenu").setAttribute("visible", false);
+            document.querySelector("#pauseMenu").setAttribute("visible", false);
 
-            const restartButton = document.querySelector("#restartButton");
-            restartButton.setAttribute("visible", false);
+            // Click control
+            disableClick(document.querySelector("#startButton"));
+            enableClick(document.querySelector("#pauseButton"));
+            enableClick(document.querySelector("#sheetMusic"));
+
+            disableClick(document.querySelector("[resume-game]"));
+            disableClick(document.querySelector("[return-menu]"));
           });
         },
       });
-      // Go back to start of ecperience (for testing porpuses)
+
+      AFRAME.registerComponent("pause-game", {
+        init() {
+          this.el.addEventListener("click", () => {
+            if (!gameStarted || isPaused) return;
+
+            isPaused = true;
+            const video = document.querySelector("#orchestraVideo");
+            video.pause();
+
+            document.querySelector("#pauseMenu").setAttribute("visible", true);
+            document
+              .querySelector("#pauseButton")
+              .setAttribute("visible", false);
+
+            // Click control
+            disableClick(document.querySelector("#pauseButton"));
+            enableClick(document.querySelector("[resume-game]"));
+            enableClick(document.querySelector("[return-menu]"));
+          });
+        },
+      });
+
+      AFRAME.registerComponent("resume-game", {
+        init() {
+          this.el.addEventListener("click", () => {
+            isPaused = false;
+            const video = document.querySelector("#orchestraVideo");
+            video.play();
+
+            document.querySelector("#pauseMenu").setAttribute("visible", false);
+            document
+              .querySelector("#pauseButton")
+              .setAttribute("visible", true);
+
+            // Click control
+            enableClick(document.querySelector("#pauseButton"));
+            disableClick(document.querySelector("[resume-game]"));
+            disableClick(document.querySelector("[return-menu]"));
+          });
+        },
+      });
+
+      AFRAME.registerComponent("return-menu", {
+        init() {
+          this.el.addEventListener("click", () => {
+            const video = document.querySelector("#orchestraVideo");
+            const sky = document.querySelector("#sky");
+
+            video.pause();
+            video.currentTime = 0;
+
+            sky.setAttribute("src", "#koncerta-skatuve");
+
+            gameStarted = false;
+            isPaused = false;
+
+            // UI
+            document
+              .querySelector("#sheetMusic")
+              .setAttribute("visible", false);
+            document
+              .querySelector("#UI-sheetMusic")
+              .setAttribute("visible", false);
+            document.querySelector("#pauseMenu").setAttribute("visible", false);
+            document.querySelector("#endMenu").setAttribute("visible", false);
+            document
+              .querySelector("#pauseButton")
+              .setAttribute("visible", false);
+
+            document
+              .querySelector("#startButton")
+              .setAttribute("visible", true);
+            document.querySelector("#GuideIU").setAttribute("visible", true);
+
+            // Click control
+            enableClick(document.querySelector("#startButton"));
+            disableClick(document.querySelector("#pauseButton"));
+            disableClick(document.querySelector("[resume-game]"));
+            disableClick(document.querySelector("[return-menu]"));
+            disableClick(document.querySelector("#sheetMusic"));
+          });
+        },
+      });
+      // Go back to start of ecperience
       const video = document.querySelector("#orchestraVideo");
       video.addEventListener("ended", () => {
-        const sky = document.querySelector("#sky");
+        isPaused = true;
+        gameStarted = false;
 
+        const sky = document.querySelector("#sky");
         sky.setAttribute("src", "#koncerta-skatuve");
-        //sky.setAttribute("material", "shader: standard; side: back");
 
         document.querySelector("#sheetMusic").setAttribute("visible", false);
         document.querySelector("#UI-sheetMusic").setAttribute("visible", false);
+        document.querySelector("#pauseButton").setAttribute("visible", false);
+        document.querySelector("#endMenu").setAttribute("visible", true);
 
-        const restartButton = document.querySelector("#restartButton");
-        restartButton.setAttribute("visible", true);
+        // Click control
+        enableClick(document.querySelector("#endMenu [start-game]"));
+        enableClick(document.querySelector("#endMenu [return-menu]"));
+        disableClick(document.querySelector("#pauseButton"));
+        disableClick(document.querySelector("#sheetMusic"));
 
         video.currentTime = 0;
-
-        gameStarted = false;
       });
 
       const sheets = [
@@ -290,13 +528,13 @@
       const SECONDS_PER_BEAT = 60 / BPM;
 
       // How early the cue appears
-      const ANTICIPATION_BEATS = 0.6;
+      const ANTICIPATION_BEATS = 0.5;
 
-      const BASE_RADIUS = 0.15;
+      const BASE_RADIUS = 0.05;
       const START_RADIUS = 0.4;
 
       function updateHitCircles() {
-        if (!gameStarted) return;
+        if (!gameStarted || isPaused) return;
         if (!window.TIMPANI_NOTE_SEQUENCE) return;
 
         const video = document.querySelector("#orchestraVideo");
@@ -310,7 +548,7 @@
           circle.setAttribute("radius", START_RADIUS);
           circle.setAttribute(
             "material",
-            "color: #ffffff; opacity: 0.15; transparent: true"
+            "color: #ffffff; opacity: 0.15; transparent: true",
           );
         });
 
@@ -320,7 +558,7 @@
 
           if (dt > 0 && dt <= prepTime) {
             const circle = document.querySelector(
-              `.hit-circle[data-drum="${note.drumIndex}"]`
+              `.hit-circle[data-drum="${note.drumIndex}"]`,
             );
             if (!circle) return;
 
@@ -331,15 +569,15 @@
 
             // Drum colors
             let color = "#ffffff";
-            if (note.drumIndex === 0) color = "#00ff66"; // C
-            if (note.drumIndex === 1) color = "#3399ff"; // G
+            if (note.drumIndex === 0) color = "#00ff66"; // G
+            if (note.drumIndex === 1) color = "#3399ff"; // C
             if (note.drumIndex === 2) color = "#fe0025"; // E
             if (note.drumIndex === 3) color = "#febf00"; // D
 
             circle.setAttribute("radius", radius);
             circle.setAttribute(
               "material",
-              `color: ${color}; opacity: 0.8; transparent: true`
+              `color: ${color}; opacity: 0.8; transparent: true`,
             );
           }
         });
