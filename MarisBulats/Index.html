@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>A-Frame + Spark + Extras</title>
+    <title>Vidzemes_Podnieka_Gustava_Ozolina_darbnica</title>
 
     <script type="importmap">
       {
@@ -493,7 +493,11 @@
 
           <a-assets>
             <a-asset-item id="navmesh-glb" src="objects/Pottery_collider.glb"></a-asset-item>
+            <audio id="background-music" src="objects/Ej_projam_ledutinu.mp3" preload="auto"></audio>
           </a-assets>
+
+          <!-- Background Music -->
+          <a-entity id="audio-entity" sound="src: #background-music; loop: true; volume: 0.5; autoplay: true"></a-entity>
 
           <!-- PLAYER (aframe-extras movement) -->
           <a-entity
@@ -601,12 +605,76 @@ data-description="A traditional ceramic jug from the Dranda Collection. Examine 
       // Hide welcome text when entering VR
       document.querySelector("a-scene").addEventListener("enter-vr", () => {
         document.getElementById("welcome-text").style.display = "none";
+        
+        // Start background music when entering VR
+        const audioEntity = document.querySelector("#audio-entity");
+        const sound = audioEntity.components.sound;
+        if (sound && sound.pool && sound.pool.children[0]) {
+          const audio = sound.pool.children[0];
+          if (!audio.isPlaying) {
+            audio.play();
+            console.log("Background music started");
+          }
+        }
       });
 
       // Show welcome text when exiting VR
       document.querySelector("a-scene").addEventListener("exit-vr", () => {
         document.getElementById("welcome-text").style.display = "block";
+        
+        // Stop background music when exiting VR
+        const audioEntity = document.querySelector("#audio-entity");
+        const sound = audioEntity.components.sound;
+        if (sound && sound.pool && sound.pool.children[0]) {
+          const audio = sound.pool.children[0];
+          if (audio.isPlaying) {
+            audio.stop();
+            console.log("Background music stopped");
+          }
+        }
       });
+
+      // Start background music with AudioContext resume
+      const scene = document.querySelector("a-scene");
+      const audioEntity = document.querySelector("#audio-entity");
+      let audioStarted = false;
+
+      const resumeAudioContext = () => {
+        if (audioStarted) return;
+        audioStarted = true;
+
+        // Resume AudioContext
+        const audioContext = THREE.AudioContext.getContext();
+        if (audioContext.state === "suspended") {
+          audioContext.resume().then(() => {
+            console.log("AudioContext resumed");
+            playBackgroundMusic();
+          });
+        } else {
+          playBackgroundMusic();
+        }
+
+        document.removeEventListener("click", resumeAudioContext);
+        document.removeEventListener("keydown", resumeAudioContext);
+        window.removeEventListener("touchstart", resumeAudioContext);
+      };
+
+      const playBackgroundMusic = () => {
+        setTimeout(() => {
+          const sound = audioEntity.components.sound;
+          if (sound && sound.pool && sound.pool.children[0]) {
+            const audio = sound.pool.children[0];
+            if (!audio.isPlaying) {
+              audio.play();
+              console.log("Background music started");
+            }
+          }
+        }, 100);
+      };
+
+      document.addEventListener("click", resumeAudioContext);
+      document.addEventListener("keydown", resumeAudioContext);
+      window.addEventListener("touchstart", resumeAudioContext);
     </script>
   </body>
 </html>
