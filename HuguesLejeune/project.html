@@ -80,28 +80,205 @@
                 animation-mixer="clampWhenFinished: true"
             ></a-entity>
 
-            <a-sphere
-                position="2.5 1.8 -2.6"
-                radius="0.04"
-                color="#34eae7"
-                event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
-                event-set__leave="_event: mouseleave; scale: 1 1 1"
-                toggle-click-animation="property: color; from: #34eae7; to: #fd8f35; dur: 300"
-                toggle-click-target-animation__plane="name: plane; target: #general; property: material.opacity; from: 0; to: 1; dur: 300"
-                toggle-click-target-animation__text="name: text; target: #general; property: text.opacity; from: 0; to: 1; dur: 300"
-            ></a-sphere>
+            <a-entity position="2.5 0 -2.6">
+                <a-sphere
+                    position="0 1.8 0"
+                    radius="0.04"
+                    color="#34eae7"
+                    event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
+                    event-set__leave="_event: mouseleave; scale: 1 1 1"
+                    toggle-click-animation="property: color; from: #34eae7; to: #fd8f35; dur: 300"
+                    toggle-click-target-animation__plane="name: plane; target: #general; property: material.opacity; from: 0; to: 1; dur: 300"
+                    toggle-click-target-animation__text="name: text; target: #general; property: text.opacity; from: 0; to: 1; dur: 300"
+                ></a-sphere>
 
-            <a-plane
-                class="bear-info"
-                id="general"
-                position="2.5 2.8 -2.6"
-                width="2.4"
-                height="1.4"
-                color="#fff"
-                material="opacity: 0; transparent: true"
-                rotate-to-follow-y="target: #cameraRig"
-                text="color: #000; align: center; width: 2.2; lineHeight: 60; opacity: 0"
-            ></a-plane>
+                <a-plane
+                    class="bear-info"
+                    id="general"
+                    position="0 2.8 0"
+                    width="2.4"
+                    height="1.4"
+                    color="#fff"
+                    material="opacity: 0; transparent: true"
+                    rotate-to-follow-y="target: #cameraRig"
+                    text="color: #000; align: center; width: 2.2; lineHeight: 60; opacity: 0"
+                ></a-plane>
+            </a-entity>
+
+            <a-entity position="2.26 0 -2.1">
+                <a-sphere
+                    position="0 0.23 0"
+                    radius="0.04"
+                    color="#34eae7"
+                    event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
+                    event-set__leave="_event: mouseleave; scale: 1 1 1"
+                    toggle-click-animation="property: color; from: #34eae7; to: #fd8f35; dur: 300"
+                    toggle-click-target-animation__plane="name: plane; target: #claws; property: material.opacity; from: 0; to: 1; dur: 300"
+                    toggle-click-target-animation__text="name: text; target: #claws; property: text.opacity; from: 0; to: 1; dur: 300"
+                ></a-sphere>
+
+                <a-plane
+                    class="bear-info"
+                    id="claws"
+                    position="0 2.8 0"
+                    width="2.4"
+                    height="1.4"
+                    color="#fff"
+                    material="opacity: 0; transparent: true"
+                    rotate-to-follow-y="target: #cameraRig"
+                    text="color: #000; align: center; width: 2.2; lineHeight: 60; opacity: 0"
+                ></a-plane>
+            </a-entity>
+
+            <a-entity position="2.47 0 -1.36">
+                <a-sphere
+                    position="0 1.1 0"
+                    radius="0.04"
+                    color="#34eae7"
+                    event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
+                    event-set__leave="_event: mouseleave; scale: 1 1 1"
+                    toggle-click-animation="property: color; from: #34eae7; to: #fd8f35; dur: 300"
+                    toggle-click-target-animation__plane="name: plane; target: #jaws; property: material.opacity; from: 0; to: 1; dur: 300"
+                    toggle-click-target-animation__text="name: text; target: #jaws; property: text.opacity; from: 0; to: 1; dur: 300"
+                ></a-sphere>
+
+                <a-plane
+                    class="bear-info"
+                    id="jaws"
+                    position="0 2.8 0"
+                    width="2.4"
+                    height="1.4"
+                    color="#fff"
+                    material="opacity: 0; transparent: true"
+                    rotate-to-follow-y="target: #cameraRig"
+                    text="color: #000; align: center; width: 2.2; lineHeight: 60; opacity: 0"
+                ></a-plane>
+            </a-entity>
+
+            <a-entity position="2 0 -2.8">
+                <a-sphere
+                    position="0 1.3 0"
+                    radius="0.04"
+                    color="#34eae7"
+                    event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
+                    event-set__leave="_event: mouseleave; scale: 1 1 1"
+                    toggle-click-animation="property: color; from: #34eae7; to: #fd8f35; dur: 300"
+                    toggle-click-target-animation__plane="name: plane; target: #fur; property: material.opacity; from: 0; to: 1; dur: 300"
+                    toggle-click-target-animation__text="name: text; target: #fur; property: text.opacity; from: 0; to: 1; dur: 300"
+                ></a-sphere>
+
+                <a-plane
+                    class="bear-info"
+                    id="fur"
+                    position="0 2.8 0"
+                    width="2.4"
+                    height="1.4"
+                    color="#fff"
+                    material="opacity: 0; transparent: true"
+                    rotate-to-follow-y="target: #cameraRig"
+                    text="color: #000; align: center; width: 2.2; lineHeight: 60; opacity: 0"
+                ></a-plane>
+            </a-entity>
+
+            <a-entity position="2.75 0 -1.7">
+                <a-sphere
+                    position="0 1.84 0"
+                    radius="0.04"
+                    color="#34eae7"
+                    event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
+                    event-set__leave="_event: mouseleave; scale: 1 1 1"
+                    toggle-click-animation="property: color; from: #34eae7; to: #fd8f35; dur: 300"
+                    toggle-click-target-animation__plane="name: plane; target: #ears; property: material.opacity; from: 0; to: 1; dur: 300"
+                    toggle-click-target-animation__text="name: text; target: #ears; property: text.opacity; from: 0; to: 1; dur: 300"
+                ></a-sphere>
+
+                <a-plane
+                    class="bear-info"
+                    id="ears"
+                    position="0 2.8 0"
+                    width="2.4"
+                    height="1.4"
+                    color="#fff"
+                    material="opacity: 0; transparent: true"
+                    rotate-to-follow-y="target: #cameraRig"
+                    text="color: #000; align: center; width: 2.2; lineHeight: 60; opacity: 0"
+                ></a-plane>
+            </a-entity>
+
+            <a-entity position="2.5 0 -1.4">
+                <a-sphere
+                    position="0 1.8 0"
+                    radius="0.04"
+                    color="#34eae7"
+                    event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
+                    event-set__leave="_event: mouseleave; scale: 1 1 1"
+                    toggle-click-animation="property: color; from: #34eae7; to: #fd8f35; dur: 300"
+                    toggle-click-target-animation__plane="name: plane; target: #eyes; property: material.opacity; from: 0; to: 1; dur: 300"
+                    toggle-click-target-animation__text="name: text; target: #eyes; property: text.opacity; from: 0; to: 1; dur: 300"
+                ></a-sphere>
+
+                <a-plane
+                    class="bear-info"
+                    id="eyes"
+                    position="0 2.8 0"
+                    width="2.4"
+                    height="1.4"
+                    color="#fff"
+                    material="opacity: 0; transparent: true"
+                    rotate-to-follow-y="target: #cameraRig"
+                    text="color: #000; align: center; width: 2.2; lineHeight: 60; opacity: 0"
+                ></a-plane>
+            </a-entity>
+
+            <a-entity position="2.5 0 -1">
+                <a-sphere
+                    position="0 1.5 0"
+                    radius="0.04"
+                    color="#34eae7"
+                    event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
+                    event-set__leave="_event: mouseleave; scale: 1 1 1"
+                    toggle-click-animation="property: color; from: #34eae7; to: #fd8f35; dur: 300"
+                    toggle-click-target-animation__plane="name: plane; target: #nose; property: material.opacity; from: 0; to: 1; dur: 300"
+                    toggle-click-target-animation__text="name: text; target: #nose; property: text.opacity; from: 0; to: 1; dur: 300"
+                ></a-sphere>
+
+                <a-plane
+                    class="bear-info"
+                    id="nose"
+                    position="0 2.8 0"
+                    width="2.4"
+                    height="1.4"
+                    color="#fff"
+                    material="opacity: 0; transparent: true"
+                    rotate-to-follow-y="target: #cameraRig"
+                    text="color: #000; align: center; width: 2.2; lineHeight: 60; opacity: 0"
+                ></a-plane>
+            </a-entity>
+
+            <a-entity position="2.9 0 -3.4">
+                <a-sphere
+                    position="0 0.14 0"
+                    radius="0.04"
+                    color="#34eae7"
+                    event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
+                    event-set__leave="_event: mouseleave; scale: 1 1 1"
+                    toggle-click-animation="property: color; from: #34eae7; to: #fd8f35; dur: 300"
+                    toggle-click-target-animation__plane="name: plane; target: #paws; property: material.opacity; from: 0; to: 1; dur: 300"
+                    toggle-click-target-animation__text="name: text; target: #paws; property: text.opacity; from: 0; to: 1; dur: 300"
+                ></a-sphere>
+
+                <a-plane
+                    class="bear-info"
+                    id="paws"
+                    position="0 2.8 0"
+                    width="2.4"
+                    height="1.4"
+                    color="#fff"
+                    material="opacity: 0; transparent: true"
+                    rotate-to-follow-y="target: #cameraRig"
+                    text="color: #000; align: center; width: 2.2; lineHeight: 60; opacity: 0"
+                ></a-plane>
+            </a-entity>
 
             <a-entity gltf-model="#pine-tree" position="1.5 0 0" scale="3 3 3">
             </a-entity>
