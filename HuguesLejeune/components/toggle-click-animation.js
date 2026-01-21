@@ -21,6 +21,17 @@ AFRAME.registerComponent("toggle-click-animation", {
                 `property: ${this.data.property}; to: ${to}; dur: ${this.data.dur}; easing: ${this.data.easing}`,
             );
             this.toggled = !this.toggled;
+
+            if (this.data.property !== "material.opacity") {
+                return;
+            }
+            if (to == 0) {
+                setTimeout(() => {
+                    this.el.setAttribute("visible", false);
+                }, this.data.dur);
+            } else {
+                this.el.setAttribute("visible", true);
+            }
         });
     },
 });
@@ -49,6 +60,17 @@ AFRAME.registerComponent("toggle-click-target-animation", {
                 `property: ${this.data.property}; to: ${to}; dur: ${this.data.dur}; easing: ${this.data.easing}`,
             );
             this.toggled = !this.toggled;
+
+            if (this.data.property !== "material.opacity") {
+                return;
+            }
+            if (to == 0) {
+                setTimeout(() => {
+                    this.data.target.setAttribute("visible", false);
+                }, this.data.dur);
+            } else {
+                this.data.target.setAttribute("visible", true);
+            }
         });
     },
 });
