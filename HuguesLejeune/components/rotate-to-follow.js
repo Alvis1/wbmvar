@@ -1,6 +1,6 @@
-AFRAME.registerComponent('rotate-to-follow-y', {
+AFRAME.registerComponent("rotate-to-follow-y", {
     schema: {
-        target: {type: 'selector'},
+        target: { type: "selector" },
     },
 
     tick() {
