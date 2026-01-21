@@ -5,6 +5,7 @@
         <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
 
         <script src="components/a-cursor-navigation.js"></script>
+        <script src="components/toggle-click-animation.js"></script>
     </head>
     <body>
         <a-scene>
@@ -56,15 +57,40 @@
 
             <a-sphere
                 position="2 1.4 -3"
-                radius="0.05"
+                radius="0.03"
                 color="#51cc0f"
-                event-set__enter="_event: mouseenter; scale: 10 10 10"
+                event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
+                event-set__leave="_event: mouseleave; scale: 1 1 1"
+                toggle-click-animation="property: color; from: #51cc0f; to: #ff0000;">
+            </a-sphere>
+            <a-sphere
+                position="2 1.4 -2.8"
+                radius="0.03"
+                color="#51cc0f"
+                event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
                 event-set__leave="_event: mouseleave; scale: 1 1 1">
             </a-sphere>
-            <a-sphere position="2 1.4 -2.8" radius="0.05" color="#51cc0f"></a-sphere>
-            <a-sphere position="2 1.4 -2.6" radius="0.05" color="#51cc0f"></a-sphere>
-            <a-sphere position="2 1.4 -2.4" radius="0.05" color="#51cc0f"></a-sphere>
-            <a-sphere position="2 1.4 -2.2" radius="0.05" color="#51cc0f"></a-sphere>
+            <a-sphere
+                position="2 1.4 -2.6"
+                radius="0.03"
+                color="#51cc0f"
+                event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
+                event-set__leave="_event: mouseleave; scale: 1 1 1">
+            </a-sphere>
+            <a-sphere
+                position="2 1.4 -2.4"
+                radius="0.03"
+                color="#51cc0f"
+                event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
+                event-set__leave="_event: mouseleave; scale: 1 1 1">
+            </a-sphere>
+            <a-sphere
+                position="2 1.4 -2.2"
+                radius="0.03"
+                color="#51cc0f"
+                event-set__enter="_event: mouseenter; scale: 1.6 1.6 1.6"
+                event-set__leave="_event: mouseleave; scale: 1 1 1">
+            </a-sphere>
 
             <a-entity position="0 1.6 -5">
                 <a-plane width="3" height="2" color="#FFF"></a-plane>
