@@ -6,10 +6,6 @@
     <title>Vidzemes_Podnieka_Gustava_Ozolina_darbnica</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>🏺</text></svg>">
 
-    <!-- Force cache busting with timestamp -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     
     <script type="importmap">
       {
@@ -61,56 +57,14 @@
       font-weight: bold;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 0, 0, 0.3);
     ">Enter VR</button>
-
-    <!-- Object Info Popup -->
-    <div id="object-popup-overlay" style="
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.7);
-      z-index: 9999;
-      display: none;
-    "></div>
     
-    <div id="object-popup" style="
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-      color: white;
-      padding: 60px;
-      border-radius: 20px;
-      max-width: 700px;
-      text-align: center;
-      z-index: 10000;
-      display: none;
-      font-family: Arial, sans-serif;
-      box-shadow: 0 0 80px rgba(76, 175, 80, 0.8), inset 0 0 40px rgba(76, 175, 80, 0.2);
-      pointer-events: auto;
-    ">
-      <h2 id="object-title" style="margin: 0 0 30px 0; color: #4CAF50; font-size: 42px; font-weight: bold; text-shadow: 0 2px 10px rgba(0,0,0,0.8);"></h2>
-      <p id="object-description" style="margin: 0 0 30px 0; line-height: 1.9; font-size: 22px; color: #e0e0e0;"></p>
-      <p style="margin: 0; font-size: 14px; color: #888; font-style: italic;">(Release trigger to close)</p>
-    </div>
 
     <script type="module">
       import AFRAME from "aframe";
       import { SplatMesh, SparkRenderer } from "@sparkjsdev/spark";
 
-      // expose AFRAME globally for extras + physics
       window.AFRAME = AFRAME;
 
-      // Suppress passive event listener warnings by adding non-passive listeners
-      document.addEventListener("touchstart", (e) => {
-        // Passive listener - allows default behavior
-      }, { passive: true });
-
-      document.addEventListener("touchend", (e) => {
-        // Passive listener - allows default behavior
-      }, { passive: true });
 
       // load aframe-extras AFTER AFRAME exists
       await new Promise((resolve) => {
@@ -124,14 +78,7 @@
       // Raycaster component for hand pointing
       AFRAME.registerComponent("hand-raycaster", {
         init() {
-          // Simplified component - just tracks hand state without heavy logic
-          this.el.addEventListener("triggerdown", () => {
-            console.log("Trigger down");
-          });
-
-          this.tick = () => {
-            // Minimal tick for performance
-          };
+          // Component for hand tracking - minimal implementation
         }
       });
 
@@ -153,6 +100,23 @@
         }
       });
 
+      // Component to hide/show controller visuals based on grab state
+      AFRAME.registerComponent("toggle-controller-visibility", {
+        init() {
+          this.isGrabbed = false;
+        },
+        
+        tick() {
+          const visible = !this.isGrabbed;
+          this.el.object3D.visible = visible;
+          this.el.object3D.traverse((node) => {
+            if (node.isMesh || node.isLine || node.isGroup) {
+              node.visible = visible;
+            }
+          });
+        }
+      });
+
       // Simple grab component for VR controllers
       AFRAME.registerComponent("simple-grab", {
         init() {
@@ -162,6 +126,7 @@
           let lastHandPos = new THREE.Vector3();
           let handVelocity = new THREE.Vector3();
           const hand = this.el;
+          const toggleVisibility = hand.getAttribute("toggle-controller-visibility") !== null;
 
           hand.addEventListener("triggerdown", (e) => {
             const handWorldPos = new THREE.Vector3();
@@ -183,6 +148,15 @@
 
             if (closest) {
               heldObject = closest;
+              
+              // Hide controller
+              if (toggleVisibility) {
+                const toggleComp = hand.components["toggle-controller-visibility"];
+                if (toggleComp) {
+                  toggleComp.isGrabbed = true;
+                }
+              }
+              
               // Store original rotation
               const rot = heldObject.getAttribute("rotation");
               originalRot = { x: rot.x, y: rot.y, z: rot.z };
@@ -209,6 +183,14 @@
 
           hand.addEventListener("triggerup", (e) => {
             if (heldObject) {
+              // Show controller
+              if (toggleVisibility) {
+                const toggleComp = hand.components["toggle-controller-visibility"];
+                if (toggleComp) {
+                  toggleComp.isGrabbed = false;
+                }
+              }
+              
               heldObject.removeAttribute("grabbed");
               
               // Only apply throw velocity to small objects (not the wheel)
@@ -436,113 +418,30 @@
         init() {
           this.objectsData = {
             obj1: {
-              imageFile: "objects/ozolins_2_fake.png",
-              imageId: "info-image-obj1",
               title: "Ceramic Vase",
-              description: "A beautiful handcrafted ceramic vase. Rotate to examine the intricate details and craftsmanship of this traditional pottery."
+              description: "A beautiful handcrafted ceramic vase. Rotate to examine the intricate details and craftsmanship."
             },
             obj2: {
-              imageFile: "objects/ceramic_vase_3d_Krievs.png",
-              imageId: "info-image-obj2",
               title: "Vase by Krievs",
               description: "An elegant pottery piece created by master craftsman Krievs. Notice the unique glaze patterns and smooth curves."
             },
             obj3: {
-              imageFile: "objects/ceramic_jug_Dranda_2.png",
-              imageId: "info-image-obj3",
               title: "Ceramic Jug - Dranda",
               description: "A traditional ceramic jug from the Dranda Collection. Examine the craftsmanship and unique handle design."
             }
           };
 
           this.currentObject = null;
-          this.elementsReady = false;
-          this.titleEl = null;
-          this.descEl = null;
-          this.imageEls = {};
-
-          // Wait for elements to be available
-          const self = this;
-          const checkElements = () => {
-            this.titleEl = document.getElementById("info-title");
-            this.descEl = document.getElementById("info-desc");
-            this.imageEls = {
-              obj1: document.getElementById("info-image-obj1"),
-              obj2: document.getElementById("info-image-obj2"),
-              obj3: document.getElementById("info-image-obj3")
-            };
-
-            if (this.titleEl && this.descEl && this.imageEls.obj1) {
-              this.elementsReady = true;
-              console.log("Info display elements ready");
-            } else {
-              setTimeout(checkElements, 100);
-            }
-          };
-
-          checkElements();
-
-          // Monitor proximity to objects
-          this.tick = () => {
-            if (!this.elementsReady) return;
-
-            const camera = document.querySelector("[camera]");
-            if (!camera) return;
-
-            const cameraPos = new THREE.Vector3();
-            camera.object3D.getWorldPosition(cameraPos);
-
-            let closestObject = null;
-            let closestDist = Infinity;
-
-            Object.keys(this.objectsData).forEach(objId => {
-              const objEl = document.getElementById(objId);
-              if (!objEl) return;
-
-              const objPos = new THREE.Vector3();
-              objEl.object3D.getWorldPosition(objPos);
-              const dist = cameraPos.distanceTo(objPos);
-
-              if (dist < closestDist && dist < 3) {
-                closestDist = dist;
-                closestObject = objId;
-              }
-            });
-
-            if (closestObject && closestObject !== this.currentObject) {
-              this.updateDisplay(closestObject);
-            }
-          };
-        },
-
-        updateDisplay(objectId) {
-          if (!this.objectsData[objectId] || !this.elementsReady) return;
-
-          this.currentObject = objectId;
-          const data = this.objectsData[objectId];
-
-          // Update title only (images are always visible now)
-          if (this.titleEl) {
-            this.titleEl.setAttribute("value", data.title);
-          }
-
-          // Update description only (images are always visible now)
-          if (this.descEl) {
-            this.descEl.setAttribute("value", data.description);
-          }
         }
       });
 
       // Overlay click-to-close handler
-      document.getElementById("object-popup-overlay").addEventListener("click", () => {
-        document.getElementById("object-popup").style.display = "none";
-        document.getElementById("object-popup-overlay").style.display = "none";
+      document.getElementById("object-popup-overlay")?.addEventListener("click", () => {
+        const popup = document.getElementById("object-popup");
+        const overlay = document.getElementById("object-popup-overlay");
+        if (popup) popup.style.display = "none";
+        if (overlay) overlay.style.display = "none";
       });
-
-      // Asset loading error handler
-      const assetLoadingError = (error) => {
-        console.error("Asset loading error:", error);
-      };
 
       // create scene AFTER everything is registered
       document.querySelector("#app").innerHTML = `
@@ -561,16 +460,18 @@
             rotation="0 47.561 0"
             movement-controls="speed: 0.1 ; constrainToNavMesh: true"
           >
-            <a-entity camera look-controls position="0 2.5same 0"></a-entity>
+            <a-entity camera look-controls position="0 2.5 0"></a-entity>
 
             <a-entity id="leftHand" 
               oculus-touch-controls="hand: left"
               simple-grab
+              toggle-controller-visibility
               hand-raycaster>
             </a-entity>
             <a-entity id="rightHand" 
               oculus-touch-controls="hand: right"
               simple-grab
+              toggle-controller-visibility
               hand-raycaster>
             </a-entity>
           </a-entity>
@@ -623,8 +524,8 @@ scale="1 0.7 1">
         <!-- GRABBABLE OBJECTS at scene root -->
 <a-entity 
 gltf-model="objects/ozolins_2_fake.glb" 
-position="-2.74342 0.82753 0.7294" 
-scale="0.4 0.4 0.4" 
+position="-2.7803 0.74147 0.7294" 
+scale="0.45 0.45 0.45" 
 grabbable="" id="obj1"
 data-title="Ceramic Vase"
 data-description="A beautiful handcrafted ceramic vase. Rotate to examine the intricate details and craftsmanship.">
@@ -632,7 +533,7 @@ data-description="A beautiful handcrafted ceramic vase. Rotate to examine the in
 
 <a-entity 
 gltf-model="objects/ceramic_vase_3d_Krievs.glb" 
-position="-2.78748 0.88117 1.22016" 
+position="-2.19451 1.26547 -2.01672" 
 scale="0.5 0.5 0.5" 
 grabbable="" id="obj2"
 data-title="Vase by Krievs"
@@ -641,11 +542,12 @@ data-description="An elegant pottery piece created by master craftsman Krievs. N
 
 <a-entity 
 gltf-model="objects/ceramic_jug_Dranda_2.glb" 
-position="-2.92266 0.7591 1.72496" 
-scale="0.35 0.35 0.3" 
+position="-2.85864 0.82297 1.50826" 
+scale="0.45 0.45 0.45" 
 grabbable="" id="obj3"
 data-title="Ceramic Jug - Dranda Collection"
 data-description="A traditional ceramic jug from the Dranda Collection. Examine the craftsmanship and unique handle design.">
+rotation="0 45 0"
 </a-entity>
 
 <a-plane 
@@ -655,7 +557,7 @@ width="0.3" height="0.3"
 material="src: objects/Info_display_1920x108px.png; side: double; transparent: true" 
 scale="18.63052 11.39561 37.32803" 
 rotation="0 180 0">
-</a-plane
+</a-plane>
 
       `;
 
@@ -669,70 +571,38 @@ rotation="0 180 0">
 
         // Clean up any existing VR sessions on page load
         if (scene.is("vr-mode")) {
-          console.log("Existing VR session detected, exiting...");
-          scene.exitVR().catch(e => console.log("Could not exit existing VR:", e));
+          scene.exitVR().catch(e => {});
         }
 
         // Handle WebGL context loss/restore
         const canvas = scene.canvas;
         if (canvas) {
           canvas.addEventListener("webglcontextlost", (event) => {
-            console.log("WebGL context lost - preventing default behavior");
             event.preventDefault();
-          }, false);
-
-          canvas.addEventListener("webglcontextrestored", () => {
-            console.log("WebGL context restored");
           }, false);
         }
 
         // VR Button Handler
         let vrTransitioning = false;
         document.getElementById("vr-button").addEventListener("click", () => {
-          if (vrTransitioning) {
-            console.log("VR transition already in progress");
-            return;
-          }
+          if (vrTransitioning) return;
 
-          // Check if already in VR mode
           if (scene.is("vr-mode")) {
-            console.log("Already in VR mode, exiting VR");
             scene.exitVR();
             return;
           }
 
-          console.log("VR button clicked");
           vrTransitioning = true;
           
           const attemptVREntry = (retries = 0) => {
             scene.enterVR().then(() => {
-              console.log("Successfully entered VR mode");
               vrTransitioning = false;
             }).catch((error) => {
-              console.error("VR entry failed:", error);
-              console.log("Error message:", error.message);
-              
-              // Retry on context loss errors
               if (error.message.includes("InvalidStateError") && retries < 2) {
-                console.log("Context lost during VR entry, retrying... (attempt " + (retries + 1) + "/2)");
                 setTimeout(() => attemptVREntry(retries + 1), 500);
                 return;
               }
-              
               vrTransitioning = false;
-              
-              // Provide user feedback
-              if (error.message.includes("No runtimes supported")) {
-                alert("VR not supported or not properly configured. Make sure:\n1. WebXR is enabled in your browser\n2. VR headset is connected and detected\n3. VR runtime is installed");
-              } else if (error.message.includes("NotSupportedError")) {
-                alert("The specified XR configuration is not supported by your device.");
-              } else if (error.message.includes("already an active")) {
-                alert("VR session already active. Please exit the current session first.");
-              } else if (error.message.includes("InvalidStateError")) {
-                alert("Graphics context lost during VR initialization. Please try again.");
-              } else {
-                alert("Failed to enter VR mode: " + error.message);
-              }
             });
           };
           
@@ -742,10 +612,8 @@ rotation="0 180 0">
         // Hide welcome text and start audio when entering VR
         scene.addEventListener("enter-vr", () => {
           isInVRMode = true;
-          document.getElementById("welcome-text").style.display = "none";
-          console.log("Entered VR mode, isInVRMode = true");
-          
-          // Delay audio start to ensure immersive context is fully initialized
+          const welcomeText = document.getElementById("welcome-text");
+          if (welcomeText) welcomeText.style.display = "none";
           setTimeout(() => {
             playAudioInVR();
           }, 500);
@@ -757,149 +625,73 @@ rotation="0 180 0">
         let isInVRMode = false;
         
         const playAudioInVR = () => {
-          console.log("[AUDIO] playAudioInVR called, isInVRMode =", isInVRMode);
-          
-          if (!isInVRMode) {
-            console.log("[AUDIO] ❌ Not in VR mode, skipping audio");
-            return;
-          }
+          if (!isInVRMode || !scene.is("vr-mode")) return;
 
-          if (!scene.is("vr-mode")) {
-            console.log("[AUDIO] ❌ Scene not in vr-mode, skipping audio");
-            return;
-          }
-
-          console.log("[AUDIO] ✅ In VR mode - getting camera");
-          
           const camera = document.querySelector("[camera]");
-          if (!camera || !camera.components.camera) {
-            console.error("[AUDIO] ❌ Camera not found");
-            return;
-          }
+          if (!camera || !camera.components.camera) return;
 
           const threeCamera = camera.components.camera.camera;
-          if (!threeCamera) {
-            console.error("[AUDIO] ❌ Three.js camera not found");
-            return;
-          }
+          if (!threeCamera) return;
 
-          // Create audio listener attached to THREE camera
-          // This routes audio to immersive XR session only
           vrAudioListener = new THREE.AudioListener();
           threeCamera.add(vrAudioListener);
-          
-          console.log("[AUDIO] ✅ Audio listener created and attached to VR camera");
-          console.log("[AUDIO] Audio context state:", vrAudioListener.context.state);
 
-          // Resume audio context if needed
           if (vrAudioListener.context.state === "suspended") {
-            console.log("[AUDIO] 🔄 Resuming suspended audio context");
             vrAudioListener.context.resume().then(() => {
-              console.log("[AUDIO] ✅ Audio context resumed, starting playback");
               createAndPlayAudio(vrAudioListener);
-            }).catch(e => console.error("[AUDIO] ❌ Failed to resume context:", e));
+            }).catch(e => {});
           } else {
             createAndPlayAudio(vrAudioListener);
           }
         };
 
         const createAndPlayAudio = (audioListener) => {
-          console.log("[AUDIO] createAndPlayAudio called");
-          
-          if (!isInVRMode) {
-            console.log("[AUDIO] ❌ VR mode ended, aborting");
-            return;
-          }
+          if (!isInVRMode || !scene.is("vr-mode")) return;
 
-          if (!scene.is("vr-mode")) {
-            console.log("[AUDIO] ❌ Not in vr-mode, aborting");
-            return;
-          }
-
-          console.log("[AUDIO] ✅ Creating THREE.Audio with VR listener");
-          
-          // Stop old audio if any
           if (vrAudio) {
             try { vrAudio.stop(); } catch(e) {}
             vrAudio = null;
           }
 
-          // Create new THREE.Audio with the VR listener
           vrAudio = new THREE.Audio(audioListener);
           
-          // Load audio buffer using THREE.AudioLoader
-          console.log("[AUDIO] Loading audio file...");
           const audioLoader = new THREE.AudioLoader();
           audioLoader.load("objects/Ej_projam_ledutinu.mp3", (audioBuffer) => {
-            console.log("[AUDIO] ✅ Audio buffer loaded, duration:", audioBuffer.duration, "s");
-            
-            // Final VR mode checks before playing
-            if (!isInVRMode || !scene.is("vr-mode")) {
-              console.log("[AUDIO] ❌ VR mode ended, not playing audio");
-              return;
-            }
-
-            if (!vrAudio) {
-              console.log("[AUDIO] ❌ Audio object was cleared, not playing");
-              return;
-            }
+            if (!isInVRMode || !scene.is("vr-mode") || !vrAudio) return;
 
             try {
               vrAudio.setBuffer(audioBuffer);
               vrAudio.setLoop(true);
               vrAudio.setVolume(1.0);
               vrAudio.play();
-              console.log("[AUDIO] 🔊 AUDIO PLAYING - routed to active audio output (headset if in immersive VR)");
-            } catch(e) {
-              console.error("[AUDIO] ❌ Error playing audio:", e);
-            }
-          }, (progress) => {
-            if (progress.total > 0) {
-              const percent = (progress.loaded / progress.total * 100).toFixed(1);
-              if (percent % 10 === 0) { // Log every 10%
-                console.log("[AUDIO] Loading: " + percent + "%");
-              }
-            }
-          }, (error) => {
-            console.error("[AUDIO] ❌ Load error:", error);
+            } catch(e) {}
           });
         };
 
         // Show welcome text and stop audio when exiting VR
         scene.addEventListener("exit-vr", () => {
           isInVRMode = false;
-          document.getElementById("welcome-text").style.display = "block";
-          console.log("Exited VR mode, isInVRMode = false");
-          
-          // Stop audio when exiting VR mode
+          const welcomeText = document.getElementById("welcome-text");
+          if (welcomeText) welcomeText.style.display = "block";
           stopAudio();
         });
 
         // Function to stop audio
         const stopAudio = () => {
-          console.log("[AUDIO] stopAudio called");
-          
           if (vrAudio) {
             try {
               vrAudio.stop();
-              console.log("[AUDIO] ✅ Audio stopped");
-            } catch(e) {
-              console.log("[AUDIO] Error stopping audio:", e.message);
-            }
+            } catch(e) {}
             vrAudio = null;
           }
           
           if (vrAudioListener) {
-            // Remove listener from camera
             const camera = document.querySelector("[camera]");
             if (camera && camera.components.camera && camera.components.camera.camera) {
               const threeCamera = camera.components.camera.camera;
               try {
                 threeCamera.remove(vrAudioListener);
-                console.log("[AUDIO] ✅ Audio listener removed from camera");
-              } catch(e) {
-                console.log("[AUDIO] Error removing listener:", e.message);
-              }
+              } catch(e) {}
             }
             vrAudioListener = null;
           }
@@ -907,13 +699,9 @@ rotation="0 180 0">
 
         // ESC key handler - stop audio when in VR mode
         document.addEventListener("keydown", (e) => {
-          if (e.key === "Escape") {
-            console.log("ESC key pressed");
-            if (scene.is("vr-mode")) {
-              console.log("Stopping audio and exiting VR mode");
-              stopAudio();
-              scene.exitVR();
-            }
+          if (e.key === "Escape" && scene.is("vr-mode")) {
+            stopAudio();
+            scene.exitVR();
           }
         });
       }, 100);
