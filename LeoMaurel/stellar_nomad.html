@@ -3,15 +3,21 @@
         <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
         <script src="res/components/spaceship-controls.js"></script>
+        <script src="res/components/speed-lines.js"></script>
         <script src="res/components/sky-follow-camera.js"></script>
         <script src="res/shaders/sky-shader.js"></script>
+        <script src="res/shaders/water-shader.js"></script>
+        <script src="res/shaders/gas-giant-shader.js"></script>
         <script src="res/components/planet-atmosphere.js"></script>
         <script src="res/components/atmospheric-post-processing.js"></script>
         <script src="res/components/update-atmosphere-uniforms.js"></script>
         <script src="res/components/atmosphere-gui.js"></script>
+        <script src="res/components/vr-camera-position.js"></script>
+        <script src="res/components/surface-gui-updater.js"></script>
+        <script src="res/components/planet-markers.js"></script>
     </head>
     <body>
-        <a-scene stats> <!-- (WIP) atmospheric-post-processing atmosphere-gui> -->
+        <a-scene stats planet-markers> <!-- (WIP) atmospheric-post-processing atmosphere-gui> -->
             <a-assets>
                 <!-- Grass material -->
                 <img id="grass-color" src="res/materials/Grass004/Grass004_2K-JPG_Color.jpg">
@@ -19,17 +25,37 @@
                 <img id="grass-roughness" src="res/materials/Grass004/Grass004_2K-JPG_Roughness.jpg">
                 <img id="grass-ao" src="res/materials/Grass004/Grass004_2K-JPG_AmbientOcclusion.jpg">
                 <img id="grass-displacement" src="res/materials/Grass004/Grass004_2K-JPG_Displacement.jpg">
+
+                <!-- Lunar rock material -->
+                <img id="lunar-color" src="res/materials/lunar-rock-bl-1/lunar-rock-albedo.png">
+                <img id="lunar-normal" src="res/materials/lunar-rock-bl-1/lunar-rock-normal-u.png">
+                <!-- <img id="lunar-roughness" src="res/materials/lunar-rock-bl-1/Grass004_2K-JPG_Roughness.jpg"> -->
+                <img id="lunar-ao" src="res/materials/lunar-rock-bl-1/lunar-rock-ao.png">
+                <img id="lunar-displacement" src="res/materials/lunar-rock-bl-1/lunar-rock-height-u.png">
+
+                <!-- Ice material -->
+                <img id="ice-color" src="res/materials/ice/Ice003_1K-JPG_Color.jpg">
+                <img id="ice-normal" src="res/materials/ice/Ice003_1K-JPG_NormalGL.jpg">
+                <img id="ice-roughness" src="res/materials/ice/Ice003_1K-JPG_Roughness.jpg">
+                <img id="ice-ao" src="res/materials/ice/Ice003_1K-JPG_AmbientOcclusion.jpg">
+                <img id="ice-displacement" src="res/materials/ice/Ice003_1K-JPG_Displacement.jpg">
                 
                 <!-- Models -->
                 <a-asset-item id="spaceship" src="res/models/spaceship.glb"></a-asset-item>
+
+                <!-- Images -->
+                <img id="controls-image" src="res/images/controls.png">
+                <img id="star-image" src="res/images/skystar.png">
             </a-assets>
             
+
+            <!-- Planets -->
+
             <a-icosahedron 
                 position="0 1.6 -3"
                 scale="800 800 800"
                 radius="1"
                 detail="6"
-                planet-atmosphere="center: 0 1.6 -3; atmosphereRadius: 90; planetRadius: 80; sunPosition: 100 50 -50"
                 material="src: #grass-color; 
                           normalMap: #grass-normal; 
                           roughness: 1.0; 
@@ -42,6 +68,65 @@
                           normalScale: 0.03 0.03">
                 >
             </a-icosahedron>
+
+            <a-icosahedron
+                position="-4508 753 -1315"
+                scale="400 400 400"
+                radius="1"
+                detail="6"
+                material="repeat: 500 500;
+                        normalMap: #lunar-normal;
+                        normalScale: 0.03 0.03;
+                        normalTextureRepeat: 500 500;
+                        roughness: 1;
+                        roughnessMap: #lunar-roughness;
+                        roughnessTextureRepeat: 500 500;
+                        src: #lunar-color">
+            </a-icosahedron>
+
+            <a-icosahedron 
+                position="100000 20 100000"
+                scale="1000 1000 1000"
+                radius="1"
+                detail="6"
+                material="src: #ice-color; 
+                          normalMap: #ice-normal; 
+                          roughness: 1.0; 
+                          roughnessMap: #ice-roughness;
+                          aoMap: #ice-ao;
+                          repeat: 500 500;
+                          normalTextureRepeat: 500 500;
+                          roughnessTextureRepeat: 500 500;
+                          aoTextureRepeat: 500 500;
+                          normalScale: 0.03 0.03">
+                >
+            </a-icosahedron>
+
+            <a-icosahedron 
+                position="100000 700 -200000"
+                scale="1000 1000 1000"
+                radius="1"
+                detail="6"
+                material="shader: water; 
+                          waterColor1: #0a4d68; 
+                          waterColor2: #1a7fa0;
+                          waveSpeed: 0.01;
+                          waveScale: 1.0;
+                          noiseScale: 250.0">
+            </a-icosahedron>
+
+            <a-icosahedron 
+                position="-200000 12000 -150000"
+                scale="10000 10000 10000"
+                radius="1"
+                detail="6"
+                material="shader: water; 
+                          waterColor1: #82124e;
+                          waterColor2: #ec6c9f;
+                          waveSpeed: 0.01;
+                          waveScale: 8.0;
+                          noiseScale: 200.0">
+            </a-icosahedron>
             
             <!-- <a-ring 
                 position="0 1.6 -3"
@@ -52,6 +137,7 @@
                 shadow="cast: true; receive: true"
                 material="color: #7a6f63; roughness: 1; metalness: 0; opacity: 0.7; transparent: true; side: double">
             </a-ring> -->
+
             <a-entity id="sun" position="100 50 -50">
                 <a-light type="directional" intensity="0.8" color="#ffeecc" cast-shadow="true">
                 </a-light>
@@ -59,19 +145,30 @@
                 <a-light type="ambient" color="#4a5f7a" intensity="0.3">
                 </a-light>
             </a-entity>
-            
-            <a-entity id="spaceship" position="3093 1.6 -417" spaceship-controls>
-                <a-entity gltf-model="#spaceship" position="0 -0.4 0.5" rotation="0 180 0">
+
+            <a-entity id="spaceship" position="3093 1.6 -417" spaceship-controls surface-gui-updater speed-lines="count: 300; maxDistance: 60; lineLength: 3; color: #88ccff; opacity: 0.7">
+                <a-entity gltf-model="#spaceship" position="0 -1.6 1.4" rotation="0 180 0" scale="2 2 2">
                 </a-entity>
-                <a-entity id="cameraRig" position="0 0 0">
-                    <a-entity id="head" position="0 0.6 -1" camera="near: 0.1; far: 100000" look-controls="reverseMouseDrag: false" update-atmosphere-uniforms="sunSelector: #sun">
+                <a-entity id="cameraRig" vr-camera-position="pcPosition: 0 0.5 -1.15; vrPosition: 0 -0.7 -1.4">
+                    <a-entity id="head" position="0 0 0" camera="near: 0.1; far: 100000" look-controls="reverseMouseDrag: false" update-atmosphere-uniforms="sunSelector: #sun">
                     </a-entity>
+                    <a-entity id="leftHand" meta-touch-controls="hand: left"></a-entity>
+                    <a-entity id="rightHand" meta-touch-controls="hand: right"></a-entity>
+                </a-entity>
+
+                <a-entity id="surface-gui" position="0.00432 -0.36028 -2.1203" rotation="-45.953507000672545 -0.8399561276617868 0.4090918657234078">
+                    <a-plane width="2" height="1" color="#1a1a1a" material="opacity: 0.8; transparent: true" scale="0.46919 0.18527 1" position="-0.00752 0.26911 0.00002">
+                    </a-plane>
+                    <a-text value="Text" align="center" width="3" position="-0.01208 0.27592 0.01" color="#ffffff" text="value: Normal Mode">
+                    </a-text>
+                    <a-image src="#controls-image" width="0.3" height="0.3" position="0.00043 -0.0658 -0.00955" scale="3.44275 1.84883 1.84883">
+                    </a-image>
                 </a-entity>
             </a-entity>
             
             <a-box 
                 id="skybox"
-                scale="50000 50000 50000"
+                scale="100000 100000 100000"
                 material="shader: sky; 
                           starDensity: 0.003; 
                           starBrightness: 1.5; 

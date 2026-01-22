@@ -9,21 +9,28 @@ uniform float sunSize;
 uniform float sunGlow;
 varying vec2 vUv;
 varying vec3 vPosition;
+varying vec3 vDirection;
 
 float random(vec2 st) {
     return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
 }
 
-float stars(vec2 uv, float density) {
-    vec2 gridUv = floor(uv * 1000.0);
-    float starRand = random(gridUv);
+float random3d(vec3 st) {
+    return fract(sin(dot(st.xyz, vec3(12.9898, 78.233, 45.5432))) * 43758.5453123);
+}
+
+float stars(vec3 pos, float density) {
+    // Use 3D position instead of 2D UVs for VR consistency
+    vec3 scaledPos = pos * 500.0;
+    vec3 gridPos = floor(scaledPos);
+    float starRand = random3d(gridPos);
     
     if (starRand > 1.0 - density) {
-        vec2 starPos = fract(uv * 1000.0);
-        vec2 center = vec2(0.5);
+        vec3 starPos = fract(scaledPos);
+        vec3 center = vec3(0.5);
         float dist = length(starPos - center);
         float blinkSpeed = 0.003 + starRand * 0.0007;
-        float phase = random(gridUv * 2.5) * 6.28318;
+        float phase = random3d(gridPos * 2.5) * 6.28318;
         float blink = 0.8 + 0.5 * sin(time * blinkSpeed + phase);
         return smoothstep(0.4, 0.0, dist) * blink;
     }
@@ -32,13 +39,15 @@ float stars(vec2 uv, float density) {
 }
 
 void main() {
-    float gradient = vPosition.y / 500.0 + 0.5;
+    // Re-normalize after interpolation to fix edge artifacts in VR
+    vec3 dir = normalize(vDirection);
+    
+    float gradient = dir.y * 0.5 + 0.5;
     vec3 skyGradient = mix(horizonColor, skyColor, gradient);
-    float starLayer = stars(vUv, starDensity);
+    float starLayer = stars(dir, starDensity);
     
     vec3 sunDir = normalize(sunPosition);
-    vec3 viewDir = normalize(vPosition);
-    float sunDot = max(dot(viewDir, sunDir), 0.0);
+    float sunDot = max(dot(dir, sunDir), 0.0);
     
     float sunDisc = smoothstep(sunSize, sunSize - 0.001, 1.0 - sunDot);
     float sunHalo = pow(sunDot, 10.0) * sunGlow;
