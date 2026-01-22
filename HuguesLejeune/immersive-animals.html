@@ -28,6 +28,10 @@
                 <a-asset-item id="oak-trees" src="objects/oak-trees.glb">
                 </a-asset-item>
             </a-assets>
+            <a-assets>
+                <audio id="bear-grunt" src="sounds/bear-grunt.m4a" preload="auto">
+                </audio>
+            </a-assets>
 
             <a-entity
                 position="0 0 0"
@@ -96,6 +100,7 @@
                 scale="0.02 0.02 0.02"
                 animation-mixer="clampWhenFinished: true"
             ></a-entity>
+            <a-entity sound="src: #bear-grunt"></a-entity>
 
             <a-entity position="2.5 0 -2.6">
                 <a-sphere
