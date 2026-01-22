@@ -15,12 +15,12 @@
   ],
   "HuguesLejeune": [
     {
-      "name": "index.html",
-      "path": "HuguesLejeune/index.html"
-    },
-    {
       "name": "immersive-animals.html",
       "path": "HuguesLejeune/immersive-animals.html"
+    },
+    {
+      "name": "index.html",
+      "path": "HuguesLejeune/index.html"
     }
   ],
   "IevaGintere": [
@@ -45,8 +45,8 @@
   ],
   "LianaOzolina": [
     {
-      "name": "AttentionArmada.html",
-      "path": "LianaOzolina/Armada/AttentionArmada.html"
+      "name": "ThinkWhereYouLook.html",
+      "path": "LianaOzolina/Armada/ThinkWhereYouLook.html"
     },
     {
       "name": "index.html",
@@ -61,10 +61,6 @@
     {
       "name": "Index.html",
       "path": "MarisBulats/Index.html"
-    },
-    {
-      "name": "Index_v1.html",
-      "path": "MarisBulats/Index_v1.html"
     }
   ],
   "MaryiaBrauer": [
