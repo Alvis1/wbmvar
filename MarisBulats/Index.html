@@ -156,39 +156,24 @@
       // Component to hide/show controller visuals based on grab state
       AFRAME.registerComponent("toggle-controller-visibility", {
         init() {
-          this.el.addEventListener("grabbed-start", () => {
-            this.hideControllerVisuals();
-          });
-          this.el.addEventListener("grabbed-end", () => {
-            this.showControllerVisuals();
-          });
+          this.isGrabbed = false;
+          console.log("toggle-controller-visibility initialized on", this.el.id);
         },
-        hideControllerVisuals() {
-          // Hide the oculus-touch-controls model by setting the hand to invisible
-          // But keep the raycaster/grab functionality working
-          const controllerChildren = this.el.children;
-          for (let child of controllerChildren) {
-            child.setAttribute("visible", false);
-          }
-          // Also hide the controller mesh directly if it exists
-          if (this.el.object3D && this.el.object3D.children) {
+        
+        tick() {
+          if (this.isGrabbed) {
+            // Keep controller hidden while grabbed
+            this.el.object3D.visible = false;
             this.el.object3D.traverse((node) => {
-              if (node.isMesh) {
+              if (node.isMesh || node.isLine || node.isGroup) {
                 node.visible = false;
               }
             });
-          }
-        },
-        showControllerVisuals() {
-          // Show the oculus-touch-controls model again
-          const controllerChildren = this.el.children;
-          for (let child of controllerChildren) {
-            child.setAttribute("visible", true);
-          }
-          // Also show the controller mesh directly if it exists
-          if (this.el.object3D && this.el.object3D.children) {
+          } else {
+            // Show controller when not grabbed
+            this.el.object3D.visible = true;
             this.el.object3D.traverse((node) => {
-              if (node.isMesh) {
+              if (node.isMesh || node.isLine || node.isGroup) {
                 node.visible = true;
               }
             });
@@ -205,6 +190,7 @@
           let lastHandPos = new THREE.Vector3();
           let handVelocity = new THREE.Vector3();
           const hand = this.el;
+          const toggleVisibility = hand.getAttribute("toggle-controller-visibility") !== null;
 
           hand.addEventListener("triggerdown", (e) => {
             const handWorldPos = new THREE.Vector3();
@@ -226,6 +212,15 @@
 
             if (closest) {
               heldObject = closest;
+              // Hide controller if toggle component exists
+              if (toggleVisibility) {
+                const toggleComp = hand.components["toggle-controller-visibility"];
+                if (toggleComp) {
+                  console.log("Setting isGrabbed = true on", hand.id);
+                  toggleComp.isGrabbed = true;
+                }
+              }
+              
               // Store original rotation
               const rot = heldObject.getAttribute("rotation");
               originalRot = { x: rot.x, y: rot.y, z: rot.z };
@@ -254,6 +249,15 @@
 
           hand.addEventListener("triggerup", (e) => {
             if (heldObject) {
+              // Show controller if toggle component exists
+              if (toggleVisibility) {
+                const toggleComp = hand.components["toggle-controller-visibility"];
+                if (toggleComp) {
+                  console.log("Setting isGrabbed = false on", hand.id);
+                  toggleComp.isGrabbed = false;
+                }
+              }
+              
               heldObject.removeAttribute("grabbed");
               
               // Only apply throw velocity to small objects (not the wheel)
@@ -613,11 +617,13 @@
             <a-entity id="leftHand" 
               oculus-touch-controls="hand: left"
               simple-grab
+              toggle-controller-visibility
               hand-raycaster>
             </a-entity>
             <a-entity id="rightHand" 
               oculus-touch-controls="hand: right"
               simple-grab
+              toggle-controller-visibility
               hand-raycaster>
             </a-entity>
           </a-entity>
