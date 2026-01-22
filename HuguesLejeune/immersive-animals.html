@@ -33,6 +33,10 @@
                 <audio id="bear-grunt" src="sounds/bear-grunt.m4a" preload="auto">
                 </audio>
             </a-assets>
+            <a-assets>
+                <audio id="forest-ambience" src="sounds/forest-ambience.mp3" preload="auto">
+                </audio>
+            </a-assets>
 
             <a-entity
                 position="0 0 0"
@@ -63,6 +67,9 @@
             </a-entity>
 
             <a-sky src="#forest-panorama" rotation="0 -90 0"></a-sky>
+            <a-entity
+                sound="src: #forest-ambience; autoplay: true; loop: true; volume: 0.3"
+            ></a-entity>
 
             <a-entity position="2.5 0 -2.5">
                 <a-plane
@@ -101,7 +108,10 @@
                 scale="0.02 0.02 0.02"
                 animation-mixer="clampWhenFinished: true"
             ></a-entity>
-            <a-entity sound="src: #bear-grunt" play-sound-randomly="minInterval: 15000; maxInterval: 90000;"></a-entity>
+            <a-entity
+                sound="src: #bear-grunt; volume: 0.6"
+                play-sound-randomly="minInterval: 15000; maxInterval: 90000;"
+            ></a-entity>
 
             <a-entity position="2.5 0 -2.6">
                 <a-sphere
