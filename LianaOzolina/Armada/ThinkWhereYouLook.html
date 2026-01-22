@@ -387,9 +387,10 @@ AFRAME.registerComponent('rotate-on-game', {
 
 <!--Camera-Eye-Gun-->
     <a-camera id="camera" id="head" look-controls wasd-controls="enabled: false" position="0 2 2">
+      
       <a-entity gltf-model="#Eye" obb-collider position="0 -0.3 -1.5" rotation="-25 180 0" scale="0.25 0.25 0.25" rotation="-20 180 0" material="emissiveIntensity: 5" animation__press="property: scale; from: 0.25 0.25 0.25; to: 0.35 0.15 0.25; dir: reverse; dur: 100; easing: easeInQuad; startEvents: mousedown">
         <a-entity id="gun" shooter click-to-shoot rotation="-15 180 0"></a-entity>
-        <a-cursor color="white"></a-cursor>
+        <a-entity geometry="primitive: ring" color="white" scale="0.1 0.1 0.1" rotation="0 180 0" position="0 0.5 5" material="emissive: #d6d6d6"></a-entity>
       </a-entity>
       
       <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
