@@ -13,129 +13,169 @@
     <script src="https://unpkg.com/aframe-super-hands-component@5.0.3/dist/aframe-super-hands-component.min.js"></script>
 
     <script>
-      AFRAME.registerComponent('hide-on-bag-touch', {
-        schema: {
-          item: { type: 'string' }
-        },
+    AFRAME.registerComponent('hide-on-bag-touch', {
+      schema: {
+        item: { type: 'string' }
+      },
 
-        init() {
-          this.el.addEventListener('obbcollisionstarted', (e) => {
-            const otherEl = e.detail.withEl;
-            if (!otherEl || otherEl.id !== 'backpack') return;
+      init() {
+        this.el.addEventListener('obbcollisionstarted', (e) => {
+          const otherEl = e.detail.withEl;
+          if (!otherEl || otherEl.id !== 'backpack') return;
 
-            // Hide object
-            this.el.setAttribute('visible', false);
+          // Hide object
+          this.el.setAttribute('visible', false);
 
-            // Update checklist
-            const uiText = document.querySelector('#cube-ui-text');
-            if (uiText && uiText.components['checklist-ui']) {
-              uiText.components['checklist-ui'].check(this.data.item);
-            }
-          });
-        }
-      });
-      </script>
+          // Update checklist
+          const uiText = document.querySelector('#cube-ui-text');
+          if (uiText && uiText.components['checklist-ui']) {
+            uiText.components['checklist-ui'].check(this.data.item);
+          }
+        });
+      }
+    });
+    </script>
 
 
     <script>
-      AFRAME.registerComponent('shake-on-bag-touch', {
-        init: function () {
+    AFRAME.registerComponent('shake-on-bag-touch', {
+      init: function () {
 
-          // Initial position from HTML
-          const pos = this.el.getAttribute('position');
-          this.initialPosition = new THREE.Vector3(pos.x, pos.y, pos.z);
+        // Initial position from HTML
+        const pos = this.el.getAttribute('position');
+        this.initialPosition = new THREE.Vector3(pos.x, pos.y, pos.z);
 
-          this.isShaking = false;
-          this.isTouchingBag = false;
+        this.isShaking = false;
+        this.isTouchingBag = false;
 
-          // Collision START
-          this.el.addEventListener('obbcollisionstarted', (e) => {
-            const otherEl = e.detail.withEl;
-            if (!otherEl || otherEl.id !== 'bag') return;
+        // Collision START
+        this.el.addEventListener('obbcollisionstarted', (e) => {
+          const otherEl = e.detail.withEl;
+          if (!otherEl || otherEl.id !== 'backpack') return;
 
-            if (this.isTouchingBag || this.isShaking) return;
+          if (this.isTouchingBag || this.isShaking) return;
 
-            this.isTouchingBag = true;
-            this.isShaking = true;
+          this.isTouchingBag = true;
+          this.isShaking = true;
 
-            this.el.removeAttribute('animation__shake');
-            this.el.setAttribute('animation__shake', {
-              property: 'rotation',
-              dur: 100,
-              loop: 6,
-              dir: 'alternate',
-              easing: 'easeInOutSine',
-              to: '0 0 10'
-            });
+          this.el.removeAttribute('animation__shake');
+          this.el.setAttribute('animation__shake', {
+            property: 'rotation',
+            dur: 100,
+            loop: 6,
+            dir: 'alternate',
+            easing: 'easeInOutSine',
+            to: '0 0 10'
           });
-
-          // Collision END
-          this.el.addEventListener('obbcollisionended', (e) => {
-            const otherEl = e.detail.withEl;
-            if (!otherEl || otherEl.id !== 'bag') return;
-            this.isTouchingBag = false;
-          });
-
-          // Animation complete
-          this.el.addEventListener('animationcomplete__shake', () => {
-            // Only reset position if NOT grabbed
-            if (!this.el.is('grabbed')) {
-              this.el.setAttribute('rotation', '0 0 0');
-              this.el.setAttribute('position', this.initialPosition);
-            } else {
-              // If grabbed, just reset rotation
-              this.el.setAttribute('rotation', '0 0 0');
-            }
-            this.isShaking = false;
-          });
-        }
-      });
-      </script>
-
-      <script>
-        AFRAME.registerComponent('checklist-ui', {
-          init() {
-            // Ordered checklist items
-            this.items = [
-              'Documents',
-              'Food & Snacks',
-              'Water',
-              'First-aid kit & Essential medicine',
-              'Radio'
-            ];
-
-            // State
-            this.checked = {};
-            this.items.forEach(i => this.checked[i] = false);
-
-            this.textEl = this.el;
-            this.render();
-          },
-
-          check(itemName) {
-            if (!this.checked[itemName]) {
-              this.checked[itemName] = true;
-              this.render();
-            }
-          },
-
-          render() {
-            const value = this.items.map(item =>
-              `${this.checked[item] ? '[X]' : '[ ]'} ${item}`
-            ).join('\n');
-
-            this.textEl.setAttribute('value', value);
-          }
         });
-        </script>
 
+        // Collision END
+        this.el.addEventListener('obbcollisionended', (e) => {
+          const otherEl = e.detail.withEl;
+          if (!otherEl || otherEl.id !== 'backpack') return;
+          this.isTouchingBag = false;
+        });
+
+        // Animation complete
+        this.el.addEventListener('animationcomplete__shake', () => {
+          // Only reset position if NOT grabbed
+          if (!this.el.is('grabbed')) {
+            this.el.setAttribute('rotation', '0 0 0');
+            this.el.setAttribute('position', this.initialPosition);
+          } else {
+            // If grabbed, just reset rotation
+            this.el.setAttribute('rotation', '0 0 0');
+          }
+          this.isShaking = false;
+        });
+      }
+    });
+    </script>
+
+    <script>
+    AFRAME.registerComponent('checklist-ui', {
+      init() {
+        // Ordered checklist items
+        this.items = [
+          'Documents',
+          'Food & Snacks',
+          'Water',
+          'First-aid kit & Essential medicine',
+          'Radio'
+        ];
+
+        // State
+        this.checked = {};
+        this.items.forEach(i => this.checked[i] = false);
+
+        this.textEl = this.el;
+        this.render();
+      },
+
+      check(itemName) {
+        if (!this.checked[itemName]) {
+          this.checked[itemName] = true;
+          this.render();
+        }
+      },
+
+      render() {
+        const value = this.items.map(item =>
+          `${this.checked[item] ? '[X]' : '[ ]'} ${item}`
+        ).join('\n');
+
+        this.textEl.setAttribute('value', value);
+      }
+    });
+    </script>
+
+    <script>
+    AFRAME.registerComponent('drag-drop', {
+      init: function () {
+        let isDragging = false;
+        let offset = new THREE.Vector3();
+        const el = this.el;
+        const camera = document.querySelector('[camera]').object3D;
+
+        el.addEventListener('mousedown', (e) => {
+          isDragging = true;
+          const worldPos = new THREE.Vector3();
+          el.object3D.getWorldPosition(worldPos);
+          offset.copy(worldPos).sub(camera.position);
+        });
+
+        window.addEventListener('mousemove', (e) => {
+          if (!isDragging) return;
+          // simple screen to world conversion
+          const mouse = new THREE.Vector2(
+            (e.clientX / window.innerWidth) * 2 - 1,
+            -(e.clientY / window.innerHeight) * 2 + 1
+          );
+          const raycaster = new THREE.Raycaster();
+          raycaster.setFromCamera(mouse, document.querySelector('[camera]').getObject3D('camera'));
+          const point = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(offset.length()));
+          el.object3D.position.copy(point);
+        });
+
+        window.addEventListener('mouseup', () => {
+          isDragging = false;
+        });
+      }
+    });
+    </script>
+
+    <!-- <script src="https://aframe.io/releases/0.3.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-click-drag-component"></script>
+    <script>
+      registerAframeClickDragComponent(window.AFRAME);
+    </script> -->
 
 
 
   </head>
   <body>
     
-    <a-scene obb-collider="showColliders: false" cube-ui-manager>
+    <a-scene obb-collider="showColliders: false">
       <!--Camera with cursor and hand tracking enabled. Pinch gesture as click event-->
       <a-entity 
         position="0 0 0" 
@@ -143,7 +183,7 @@
         movement-controls="speed: 1.01; enabled:false"
         a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
         <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false; pointerLockEnabled: true">
-          <a-cursor color="black" position="0 0 -0.7"></a-cursor>
+          <a-cursor color="white" position="0 0 -0.7"></a-cursor>
         </a-entity>
         <a-entity id="leftHand" hand-tracking-grab-controls="hand: left"></a-entity>
         <a-entity id="rightHand" hand-tracking-grab-controls="hand: right"></a-entity>
@@ -184,44 +224,45 @@
       </a-assets>
       <a-entity id="backpack" obj-model="obj: #backpack; mtl: #backpack-mtl" position="-0.81629 1.13137 0.17606" scale="0.4 0.4 0.4" rotation="0 -47.33147049796217 0" obb-collider="centerModel: true"></a-entity>      
       
+      
       <!--Grabbing objects-->
-      <a-box id="cube1" grabbable="hoverEnabled: true; hoverColor: #red;" position="-0.85 1.05 0.6" color="yellow" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #backpack" shake-on-bag-touch></a-box>
-      <a-box id="cube4" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.6 1.05 -0.6" color="pink" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #backpack" shake-on-bag-touch></a-box>
-
+      <a-box drag-drop id="cube4" grabbable=" hoverEnabled: true; hoverColor: #red;" position="-0.6 1.05 -0.6" color="pink" scale="0.05 0.05 0.05" rotation="0 0 0" obb-collider="objects: #backpack" shake-on-bag-touch></a-box>
+      <a-box drag-drop id="cube1" grabbable="" position="-0.90746 0.95913 -0.5333" color="yellow" scale="0.05 0.05 0.05" obb-collider="centerModel: true" shake-on-bag-touch=""></a-box>
+      
       <!--Water Bottle-->
       <a-assets>
         <a-asset-item id="water" src="./src/water_bottle2/water_bottle2.obj"></a-asset-item>
         <a-asset-item id="water-mtl" src="./src/water_bottle2/water_bottle2.mtl"></a-asset-item>
       </a-assets>
-      <a-entity id="water_bottle" obj-model="obj: #water; mtl: #water-mtl" position="-0.61542 1.05832 -1.11672" scale="0.137 0.26272 0.12726" grabbable="hoverEnabled: true;" rotation="0 0 0" obb-collider="objects: #backpack" hide-on-bag-touch="item: Water"></a-entity>
+      <a-entity drag-drop id="water_bottle" obj-model="obj: #water; mtl: #water-mtl" position="-0.61542 1.05832 -1.11672" scale="0.137 0.26272 0.12726" grabbable="hoverEnabled: true;" rotation="0 0 0" obb-collider="objects: #backpack" hide-on-bag-touch="item: Water"></a-entity>
       
       <!--Documents-->
       <a-assets>
         <a-asset-item id="documents" src="./src/documents/documents.obj"></a-asset-item>
         <a-asset-item id="documents-mtl" src="./src/documents/documents.mtl"></a-asset-item>
       </a-assets>
-      <a-entity id="documents" obj-model="obj: #documents; mtl: #documents-mtl" position="-0.6858 0.97359 -0.173" scale="0.3 0.25 0.1" grabbable="hoverEnabled: true;" rotation="-75 180 180" obb-collider="objects: #backpack" hide-on-bag-touch="item: Documents"></a-entity>
+      <a-entity drag-drop id="documents" obj-model="obj: #documents; mtl: #documents-mtl" position="-0.6858 0.97359 -0.173" scale="0.3 0.25 0.1" grabbable="hoverEnabled: true;" rotation="-75 180 180" obb-collider="objects: #backpack" hide-on-bag-touch="item: Documents"></a-entity>
       
       <!--Food-->
       <a-assets>
         <a-asset-item id="food" src="./src/food/food.obj"></a-asset-item>
         <a-asset-item id="food-mtl" src="./src/food/food.mtl"></a-asset-item>
       </a-assets>
-      <a-entity id="food" obj-model="obj: #food; mtl: #food-mtl" position="-1.03414 0.98759 -0.28227" scale="0.15435 0.21969 0.16536" grabbable="hoverEnabled: true;" rotation="0 0 0" obb-collider="objects: #backpack" hide-on-bag-touch="item: Food & Snacks"></a-entity>
+      <a-entity drag-drop id="food" obj-model="obj: #food; mtl: #food-mtl" position="-1.03414 0.98759 -0.28227" scale="0.15435 0.21969 0.16536" grabbable="hoverEnabled: true;" rotation="0 0 0" obb-collider="objects: #backpack" hide-on-bag-touch="item: Food & Snacks"></a-entity>
 
       <!--First-aid-kit-->
       <a-assets>
         <a-asset-item id="first-aid-kit" src="./src/first-aid-kit/first-aid-kit.obj"></a-asset-item>
         <a-asset-item id="first-aid-kit-mtl" src="./src/first-aid-kit/first-aid-kit.mtl"></a-asset-item>
       </a-assets>
-      <a-entity id="first-aid-kit" obj-model="obj: #first-aid-kit; mtl: #first-aid-kit-mtl" position="-0.51693 1.00945 -0.84182" scale="0.12336 0.18346 0.12865" grabbable="hoverEnabled: true;" rotation="0 0 0" obb-collider="objects: #backpack" hide-on-bag-touch="item: First-aid kit & Essential medicine"></a-entity>
+      <a-entity drag-drop id="first-aid-kit" obj-model="obj: #first-aid-kit; mtl: #first-aid-kit-mtl" position="-0.51693 1.00945 -0.84182" scale="0.12336 0.18346 0.12865" grabbable="hoverEnabled: true;" rotation="0 0 0" obb-collider="objects: #backpack" hide-on-bag-touch="item: First-aid kit & Essential medicine"></a-entity>
 
       <!--Radio-->
       <a-assets>
         <a-asset-item id="radio" src="./src/radio/radio.obj"></a-asset-item>
         <a-asset-item id="radio-mtl" src="./src/radio/radio.mtl"></a-asset-item>
       </a-assets>
-      <a-entity id="radio" obj-model="obj: #radio; mtl: #radio-mtl" position="-0.70322 0.99049 -0.44217" scale="0.12 0.12352 0.16798" grabbable="hoverEnabled: true;" rotation="0 -17.649391921209876 0" obb-collider="objects: #backpack" hide-on-bag-touch="item: Radio"></a-entity>
+      <a-entity drag-drop id="radio" obj-model="obj: #radio; mtl: #radio-mtl" position="-0.70322 0.99049 -0.44217" scale="0.12 0.12352 0.16798" grabbable="hoverEnabled: true;" rotation="0 -17.649391921209876 0" obb-collider="objects: #backpack" hide-on-bag-touch="item: Radio"></a-entity>
 
 
       <a-entity id="cube-ui" position="0 1.8 -1.2">
