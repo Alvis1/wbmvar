@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
@@ -106,7 +106,10 @@
       ></a-plane>
 
       <a-entity id="cameraRig">
-        <a-camera a-cursor-teleport>
+        <a-camera
+          look-controls="reverseMouseDrag: false; pointerLockEnabled: true"
+          a-cursor-teleport
+        >
           <a-cursor></a-cursor>
         </a-camera>
         <a-entity
@@ -129,6 +132,21 @@
           position="0 50 0"
           light="color: #91d0b5; groundColor: #273a49; intensity: 1.884; type: hemisphere"
         ></a-entity>
+
+        <a-entity
+          id="soundtest"
+          geometry="primitive: plane; height: 0.2; width: 1"
+          position="0 2 -3"
+          scale="10 10 10"
+          sound="src: url(Sounds/timpani_hit.mp3); on: click"
+        >
+          <a-text
+            position="0 0 0"
+            value="Click Me!"
+            color="#FF0000"
+          ></a-text>
+        </a-entity>
+
         <a-entity
           class="environment"
           position="0.5 1 0"
