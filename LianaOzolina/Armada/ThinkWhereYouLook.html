@@ -106,17 +106,27 @@ AFRAME.registerComponent('click-to-shoot', {
 AFRAME.registerComponent('score-keeper', {
   init: function () {
     this.score = 0;
+    this.triggered = false;
     this.el.setAttribute('text', 'value', '0');
 
+    const winSound = document.querySelector('#score12Sound');
+
     this.el.sceneEl.addEventListener('game-start', () => {
-    this.score = 0;
-    this.el.setAttribute('text', 'value', '0');
+      this.score = 0;
+      this.triggered = false;
+      this.el.setAttribute('text', 'value', '0');
     });
 
     this.el.sceneEl.addEventListener('score', (evt) => {
-      const points = evt.detail?.points ?? 1; // default +1
+      const points = evt.detail?.points ?? 1;
       this.score += points;
       this.el.setAttribute('text', 'value', `${this.score}`);
+
+      // Trigger at 12 points
+      if (this.score >= 12 && !this.triggered) {
+        this.triggered = true;
+        winSound.components.sound.playSound();
+      }
     });
   }
 });
@@ -239,6 +249,7 @@ AFRAME.registerComponent('game-sounds', {
     <audio id="Alarm" src="Sound/AlarmClockRing.mp3" preload="auto"></audio>
     <audio id="Bass" src="Sound/DeepAmbience.mp3" preload="auto"></audio>
     <audio id="Music" src="Sound/FridayKeysBGMusic.mp3" preload="auto"></audio>
+    <audio id="Win" src="Sound/MaxPoint Score.mp3" preload="auto"></audio>
   </a-asset>
 
 
@@ -321,7 +332,11 @@ AFRAME.registerComponent('game-sounds', {
       position="0 1.75 -8"
       sound="src: #Alarm; autoplay: false; loop: false; volume: 0.8">
     </a-entity>
-
+    <a-entity
+      id="score12Sound"
+      position="18 27.8 -22.4"
+      sound="src: #Win; autoplay: false; volume: 3">
+    </a-entity>
 
 
 <!--Eyes in the World-->
