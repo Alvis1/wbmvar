@@ -219,6 +219,11 @@ AFRAME.registerComponent('rotate-on-game', {
     <a-asset-item id="FdHrt" src="Objects/FoodHeart.glb"></a-asset-item>
     <a-asset-item id="AI" src="Objects/AI.glb"></a-asset-item>
     <a-asset-item id="Phone" src="Objects/Phone.glb"></a-asset-item>
+
+    <audio id="Laser" src="Sound/LaserEye.mp3" preload="auto"></audio>
+    <audio id="Alarm" src="Sound/AlarmClockRing.mp3" preload="auto"></audio>
+    <audio id="Bass" src="Sound/DeepAmbience.mp3" preload="auto"></audio>
+    <audio id="Music" src="Sound/FridayKeysBGMusic.mp3" preload="auto"></audio>
   </a-asset>
 
 
@@ -293,7 +298,10 @@ AFRAME.registerComponent('rotate-on-game', {
   <!--GameTimer and Environment-->
   <body>
     <a-scene game-timer="duration: 30" environment="preset: starry; ground: noise; groundTexture: none; dressing: none" fog="color: #940000; far: 84">
-  
+   
+    <a-entity position="0 0 -3" sound="src: #Bass; autoplay: true; loop: true; volume: 0.3"></a-entity>
+    <a-entity position="0 0 -3" sound="src: #Music; autoplay: true; loop: true"></a-entity>
+
 
 <!--Eyes in the World-->
   <a-entity gltf-model="Objects/Eye.glb" rotation="-90 0 0" scale="1 1 0.02818" position="0 0 2"></a-entity>
@@ -388,9 +396,18 @@ AFRAME.registerComponent('rotate-on-game', {
 <!--Camera-Eye-Gun-->
     <a-camera id="camera" id="head" look-controls wasd-controls="enabled: false" position="0 2 2">
       
-      <a-entity gltf-model="#Eye" obb-collider position="0 -0.3 -1.5" rotation="-25 180 0" scale="0.25 0.25 0.25" rotation="-20 180 0" material="emissiveIntensity: 5" animation__press="property: scale; from: 0.25 0.25 0.25; to: 0.35 0.15 0.25; dir: reverse; dur: 100; easing: easeInQuad; startEvents: mousedown">
+      <a-entity 
+      gltf-model="#Eye" 
+      position="0 -0.3 -1.5" 
+      rotation="-25 180 0" 
+      scale="0.25 0.25 0.25" 
+      rotation="-20 180 0" 
+      material="emissiveIntensity: 5"
+      sound="src: #Laser; startEvents: mousedown"
+      animation__press="property: scale; from: 0.25 0.25 0.25; to: 0.35 0.15 0.25; dir: reverse; dur: 100; easing: easeInQuad; startEvents: mousedown">
         <a-entity id="gun" shooter click-to-shoot rotation="-15 180 0"></a-entity>
         <a-entity geometry="primitive: ring" color="white" scale="0.1 0.1 0.1" rotation="0 180 0" position="0 0.5 5" material="emissive: #d6d6d6"></a-entity>
+       <a-cursor color="white"></a-cursor>
       </a-entity>
       
       <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
