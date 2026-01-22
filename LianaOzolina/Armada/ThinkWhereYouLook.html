@@ -1,0 +1,403 @@
+<head>
+
+  <title>Think Where You Look</title>
+<!--A-Frame-->
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+<!--A-Frame Extras-->
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+<!--Environment-->
+  <script src="https://unpkg.com/aframe-environment-component@1.3.3/dist/aframe-environment-component.min.js"></script>
+<!--Event-Set Component-->
+  <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
+<!--Shooting-Script--> 
+  <script src="aframe-super-shooter-kit.min.js"></script>
+
+
+
+<!--Scripts-->
+<script>
+AFRAME.registerComponent('click-to-shoot', {
+  init: function () {
+    document.body.addEventListener('mousedown', () => {
+    this.el.emit('shoot');
+  });
+  }
+  });
+
+
+  // Change color when hit + die + respawn
+    AFRAME.registerComponent('hit-handler', {
+    schema: {
+    points: { type: 'int', default: 1 },
+    respawn: { type: 'boolean', default: true },
+    respawnDelay: { type: 'int', default: 10000 }
+    },
+    dependencies: ['material'],
+
+    init: function () {
+    const el = this.el;
+    const color = new THREE.Color();
+    let dead = false;
+    let active = false;
+    let gameRunning = false; // authoritative flag
+
+    // Start inactive
+    el.setAttribute('visible', false);
+    el.classList.remove('enemy');
+
+    // Game start
+    el.sceneEl.addEventListener('game-start', () => {
+      gameRunning = true;
+      active = true;
+      dead = false;
+
+      el.setAttribute('visible', true);
+      el.classList.add('enemy');
+      el.play();
+    });
+
+    // Game end
+    el.sceneEl.addEventListener('game-end', () => {
+      gameRunning = false;
+      active = false;
+      dead = false;
+
+      el.setAttribute('visible', false);
+      el.classList.remove('enemy');
+      el.pause();
+    });
+
+    // Hit
+    el.addEventListener('hit', () => {
+      if (!gameRunning || !active || dead) return;
+      color.addScalar(0.05);
+      el.components.material.material.color.copy(color);
+    });
+
+    // Die
+    el.addEventListener('die', () => {
+      if (!gameRunning || !active || dead) return;
+      dead = true;
+
+      el.sceneEl.emit('score', { points: this.data.points });
+
+      el.setAttribute('visible', false);
+      el.classList.remove('enemy');
+      el.pause();
+
+      // Conditional respawn
+      if (!this.data.respawn) return;
+
+      setTimeout(() => {
+        // Abort if game is no longer running
+        if (!gameRunning) return;
+
+        dead = false;
+        el.setAttribute('visible', true);
+        el.classList.add('enemy');
+        el.play();
+      }, this.data.respawnDelay);
+    });
+  }
+});
+
+
+// Score system
+AFRAME.registerComponent('score-keeper', {
+  init: function () {
+    this.score = 0;
+    this.el.setAttribute('text', 'value', '0');
+
+    this.el.sceneEl.addEventListener('game-start', () => {
+    this.score = 0;
+    this.el.setAttribute('text', 'value', '0');
+    });
+
+    this.el.sceneEl.addEventListener('score', (evt) => {
+      const points = evt.detail?.points ?? 1; // default +1
+      this.score += points;
+      this.el.setAttribute('text', 'value', `${this.score}`);
+    });
+  }
+});
+
+
+// Start Game Target
+AFRAME.registerComponent('start-game-target', {
+  init: function () {
+    const el = this.el;
+    let active = true;
+
+    el.classList.add('enemy');
+
+    el.addEventListener('die', () => {
+      if (!active) return;
+      active = false;
+
+      el.sceneEl.emit('game-start');
+
+      el.setAttribute('visible', false);
+      el.classList.remove('enemy');
+      el.pause();
+    });
+
+    // Reappear after game ends
+    el.sceneEl.addEventListener('game-end', () => {
+      active = true;
+      el.setAttribute('visible', true);
+      el.classList.add('enemy');
+      el.play();
+    });
+  }
+});
+
+
+//Game timer
+AFRAME.registerComponent('game-timer', {
+  schema: {
+    duration: { type: 'int', default: 60 } // seconds
+  },
+
+  init: function () {
+    this.timeout = null;
+
+    this.el.sceneEl.addEventListener('game-start', () => {
+      // Clear previous timer if any
+      if (this.timeout) clearTimeout(this.timeout);
+
+      // Start countdown
+      this.timeout = setTimeout(() => {
+        this.el.sceneEl.emit('game-end');
+      }, this.data.duration * 1000);
+    });
+  }
+});
+
+
+//Rotate Sky
+AFRAME.registerComponent('rotate-on-game', {
+  schema: {
+    duration: { type: 'int', default: 10000 } // ms
+  },
+
+  init: function () {
+    const el = this.el;
+
+    el.sceneEl.addEventListener('game-start', () => {
+      el.setAttribute('animation', {
+        property: 'rotation',
+        from: '0 0 0',
+        to: '0 0 360',
+        dur: this.data.duration,
+        easing: 'easeInOutQuad'
+      });
+    });
+
+    el.sceneEl.addEventListener('game-end', () => {
+      el.removeAttribute('animation');
+      el.setAttribute('rotation', '0 0 0');
+    });
+  }
+});
+
+</script>
+</head>
+
+
+
+<!--Assets-->
+  <a-asset>
+    <a-asset-item id="ClckFc" src="Objects/AlarmFace.glb" scale="1"></a-asset-item>
+    <a-asset-item id="ClckRm" src="Objects/AlarmRim.glb" scale="1"></a-asset-item>
+    <a-asset-item id="SkyBall" src="Objects/SkyBall.glb" scale="1.5 1.5 1.5"></a-asset-item>
+    <a-asset-item id="Eye" src="Objects/Eye.glb"></a-asset-item>
+    <a-asset-item id="Bull" src="Objects/BulletModel.glb" scale="5 5 5"></a-asset-item>
+    <a-asset-item id="Yoga" src="Objects/Yoga.glb" scale="1 1 1"></a-asset-item>
+    <a-asset-item id="News" src="Objects/News.glb"></a-asset-item>
+    <a-asset-item id="Relax" src="Objects/Relax.glb"></a-asset-item>
+    <a-asset-item id="Bed" src="Objects/Bed.glb"></a-asset-item>
+    <a-asset-item id="FdHrt" src="Objects/FoodHeart.glb"></a-asset-item>
+    <a-asset-item id="AI" src="Objects/AI.glb"></a-asset-item>
+    <a-asset-item id="Phone" src="Objects/Phone.glb"></a-asset-item>
+  </a-asset>
+
+
+
+<!--Mixins-->
+  <!--Bad Targets-->
+  <a-mixin
+    id="MxnAI"
+    gltf-model="#AI"
+    animation="property: rotation; from: 0 0 0; to: 360 360 0; dur: 4000; easing: linear; loop: true;" 
+    class="enemy bad" 
+    target="" 
+    hit-handler="points: -1; respawn: true; respawnDelay: 2000"
+  ></a-mixin>
+
+  <a-mixin
+    id="MxnNews"
+    gltf-model="#News"
+    class="enemy bad" 
+    target="" 
+    hit-handler="points: -1; respawn: true; respawnDelay: 2000"
+  ></a-mixin>
+
+  <a-mixin
+    id="MxnPhn"
+    gltf-model="#Phone"
+    animation="property: rotation; from: 0 0 0; to: 0 360 360; dur: 4000; easing: linear; loop: true;" 
+    class="enemy bad" 
+    target="" 
+    hit-handler="points: -1; respawn: true; respawnDelay: 2000"
+  ></a-mixin>
+
+  <!--Good Targets-->
+  <a-mixin
+    id="MxnHrt"
+    gltf-model="#FdHrt"
+    animation="property: rotation; from: 0 0 0; to: 360 0 0; dur: 4000; easing: linear; loop: true;" 
+    class="enemy" 
+    target="" 
+    hit-handler="points: 1; respawn: false"
+  ></a-mixin>
+
+  <a-mixin
+    id="MxnRlx"
+    gltf-model="#Relax"
+    class="enemy" 
+    target="" 
+    hit-handler="points: 1; respawn: false"
+  ></a-mixin>
+
+  <a-mixin
+    id="MxnBed"
+    gltf-model="#Bed"  
+    animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 8000; easing: linear; loop: true;" 
+    class="enemy" 
+    target="" 
+    hit-handler="points: 1; respawn: false"
+  ></a-mixin>
+
+  <a-mixin
+    id="MxnYoga"
+    gltf-model="#Yoga"  
+    animation="property: rotation; from: 0 0 0; to: 0 360 0; dur: 4000; easing: linear; loop: true;" 
+    class="enemy" 
+    target="" 
+    hit-handler="points: 1; respawn: false"
+  ></a-mixin>
+
+
+  
+<!--World-->
+  <!--GameTimer and Environment-->
+  <body>
+    <a-scene game-timer="duration: 30" environment="preset: starry; ground: noise; groundTexture: none; dressing: none" fog="color: #940000; far: 84">
+  
+
+<!--Eyes in the World-->
+  <a-entity gltf-model="Objects/Eye.glb" rotation="-90 0 0" scale="1 1 0.02818" position="0 0 2"></a-entity>
+  <a-entity gltf-model="Objects/Eye.glb" position="2.45 0.4 -8" rotation="0 -70 0" scale="0.8 0.8 0.8"></a-entity>
+  <a-entity gltf-model="Objects/Eye.glb" position="-2.45 0.4 -8" rotation="0 70 0" scale="0.8 0.8 0.8"></a-entity>
+
+
+
+<!--Game Tittle-->
+<a-entity position="0 0.3085 -4.86364" scale="0.6 0.6 0.6" text="align: center; color: #ffffff; font: monoid; value: Think Where You Look; width: 20" rotation="-27.127259768263958 0 0">
+  </a-entity>
+
+
+
+<!--Targets-->
+    <a-entity mixin="MxnAI" position="-11.1 11.1 -0.8" rotation="26 74 -6"></a-entity>
+    <a-entity mixin="MxnAI" position="13.2 9.3 11" rotation="9 -152 -10" scale="2 2 2"></a-entity>
+
+    <a-entity mixin="MxnPhn" position="-13.2 3.9 6.6" rotation="21 84 9"></a-entity>
+    <a-entity mixin="MxnPhn" position="-0.1 7 18.1" rotation="21 -10 40" scale="1.6 1.6 1.6"></a-entity>
+    <a-entity mixin="MxnPhn" position="13.1 18.9 5.4" rotation="-74 0 0" scale="1.5 1.5 1.5"></a-entity>
+
+    <a-entity mixin="MxnHrt" position="-10.4 10.3 -6.5" rotation="0 51 0"></a-entity>
+    <a-entity mixin="MxnHrt" position="10.7 1.8 -8.5" rotation="0 -40 0"></a-entity>
+    <a-entity mixin="MxnHrt" position="18.2 14.2 6.5" rotation="-11 68 4"></a-entity>
+    <a-entity mixin="MxnHrt" position="-11.7 27.1 9.5" scale="1.45 1.45 1.45" rotation="-38 -39 -14"></a-entity>
+
+    <a-entity mixin="MxnRlx" position="17 18 -3" rotation="-19 101 0" scale="2.4 2.4 2.4"></a-entity>
+    <a-entity mixin="MxnRlx" position="-12.8 12.5 4.4" rotation="-20 -66 -4" scale="1.9 1.9 1.9"></a-entity>
+
+    <a-entity mixin="MxnBed" position="-9.2 5.6 14.2" rotation="0 -26 0" scale="1.47 1.47 1.47"></a-entity>
+    <a-entity mixin="MxnBed" position="15.7 3. 5.9" rotation="0 84 0" scale="1.3 1.3 1.3"></a-entity>
+    <a-entity mixin="MxnBed" position="9.3 15.9 13.9" rotation="-31 -9 43" scale="1.5 1.5 1.5"></a-entity>
+
+    <a-entity mixin="MxnYoga" position="7 3.7 11.35"></a-entity>
+    <a-entity mixin="MxnYoga" position="7 6.7 -11"></a-entity>
+    <a-entity mixin="MxnYoga" position="-14.2 1.7 0.2"></a-entity>
+
+    <a-entity mixin="MxnNews" scale="1.7 1.7 1.7" position="-10 5 -4.6" rotation="0 63 0"></a-entity>
+    <a-entity mixin="MxnNews" scale="2.5 2.5 2.5" position="15 7.4 -4" rotation="15 -57 0"></a-entity>
+    <a-entity mixin="MxnNews" scale="1.7 1.7 1.7" position="-3.6 13.3 10" rotation="28 152 -1"></a-entity>
+
+    
+
+<!--Start-Target-->
+ <a-entity
+    rotation="0 30 0"
+    position="0 1.75 -8"
+    animation="property: position; from: -6 4 -8; to: -6 1.2 -8; dur: 500; easing: linear; loop: true; dir: alternate; easing: easeInQuad">
+    <a-entity 
+      target="" 
+      gltf-model="#ClckRm" 
+      scale="1.5 1.5 1.5"
+      start-game-target
+      animation="property: scale; from: 1 2 1.5; to: 2 1 1.5; dur: 500; easing: linear; loop: true; dir: alternate; easing: easeInQuad">
+      <a-entity id="startTarget" gltf-model="#ClckFc" Scale="1 1 1"></a-entity>
+    </a-entity>
+  </a-entity>
+
+
+
+<!--Sky-->
+  <a-entity
+  rotate-on-game="duration: 30000">
+  <a-entity gltf-model="#SkyBall" scale="45 45 45" rotation="180 90 0"></a-entity>
+  </a-entity>  
+
+
+
+<!--Score-Text-->
+  <a-entity
+    position="18 27.8 -22.4"
+    scale="12 12 12"
+    text="font: monoid; color: #ffffff; width: 20; value: align: center; tabSize: 4; alphaTest: 0.5; align: center"
+    rotation="42.5 0 0"
+    score-keeper>
+  </a-entity>
+  <a-entity 
+  position="-6 27.8 -22.4" 
+  scale="12 12 12" 
+  text="font: monoid; align: center; color: #ffffff; value: SCORE; width: 20" 
+  rotation="42.5 0 0">
+  </a-entity>
+
+
+
+<!--Bullets-->
+  <a-entity id="bulletTemplate" bullet gltf-model="#Bull" material="color: orange"></a-entity>
+
+
+
+<!--Camera-Eye-Gun-->
+    <a-camera id="camera" id="head" look-controls wasd-controls="enabled: false" position="0 2 2">
+      
+      <a-entity gltf-model="#Eye" obb-collider position="0 -0.3 -1.5" rotation="-25 180 0" scale="0.25 0.25 0.25" rotation="-20 180 0" material="emissiveIntensity: 5" animation__press="property: scale; from: 0.25 0.25 0.25; to: 0.35 0.15 0.25; dir: reverse; dur: 100; easing: easeInQuad; startEvents: mousedown">
+        <a-entity id="gun" shooter click-to-shoot rotation="-15 180 0"></a-entity>
+        <a-entity geometry="primitive: ring" color="white" scale="0.1 0.1 0.1" rotation="0 180 0" position="0 0.5 5" material="emissive: #d6d6d6"></a-entity>
+      </a-entity>
+      
+      <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
+      <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
+    </a-camera>
+
+
+
+  </a-scene>
+</body>
