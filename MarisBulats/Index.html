@@ -153,6 +153,49 @@
         }
       });
 
+      // Component to hide/show controller visuals based on grab state
+      AFRAME.registerComponent("toggle-controller-visibility", {
+        init() {
+          this.el.addEventListener("grabbed-start", () => {
+            this.hideControllerVisuals();
+          });
+          this.el.addEventListener("grabbed-end", () => {
+            this.showControllerVisuals();
+          });
+        },
+        hideControllerVisuals() {
+          // Hide the oculus-touch-controls model by setting the hand to invisible
+          // But keep the raycaster/grab functionality working
+          const controllerChildren = this.el.children;
+          for (let child of controllerChildren) {
+            child.setAttribute("visible", false);
+          }
+          // Also hide the controller mesh directly if it exists
+          if (this.el.object3D && this.el.object3D.children) {
+            this.el.object3D.traverse((node) => {
+              if (node.isMesh) {
+                node.visible = false;
+              }
+            });
+          }
+        },
+        showControllerVisuals() {
+          // Show the oculus-touch-controls model again
+          const controllerChildren = this.el.children;
+          for (let child of controllerChildren) {
+            child.setAttribute("visible", true);
+          }
+          // Also show the controller mesh directly if it exists
+          if (this.el.object3D && this.el.object3D.children) {
+            this.el.object3D.traverse((node) => {
+              if (node.isMesh) {
+                node.visible = true;
+              }
+            });
+          }
+        }
+      });
+
       // Simple grab component for VR controllers
       AFRAME.registerComponent("simple-grab", {
         init() {
@@ -204,6 +247,8 @@
               handVelocity.set(0, 0, 0);
               
               heldObject.setAttribute("grabbed", true);
+              // Emit event to hide controller visuals
+              hand.emit("grabbed-start");
             }
           });
 
@@ -222,6 +267,8 @@
               }
               
               heldObject = null;
+              // Emit event to show controller visuals
+              hand.emit("grabbed-end");
             }
           });
 
@@ -566,11 +613,13 @@
             <a-entity id="leftHand" 
               oculus-touch-controls="hand: left"
               simple-grab
+              toggle-controller-visibility
               hand-raycaster>
             </a-entity>
             <a-entity id="rightHand" 
               oculus-touch-controls="hand: right"
               simple-grab
+              toggle-controller-visibility
               hand-raycaster>
             </a-entity>
           </a-entity>
