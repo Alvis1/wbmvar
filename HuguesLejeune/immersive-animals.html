@@ -33,6 +33,10 @@
                 <audio id="bear-grunt" src="sounds/bear-grunt.m4a" preload="auto">
                 </audio>
             </a-assets>
+            <a-assets>
+                <audio id="forest-ambience" src="sounds/forest-ambience.mp3" preload="auto">
+                </audio>
+            </a-assets>
 
             <a-entity
                 position="0 0 0"
@@ -63,6 +67,9 @@
             </a-entity>
 
             <a-sky src="#forest-panorama" rotation="0 -90 0"></a-sky>
+            <a-entity
+                sound="src: #forest-ambience; autoplay: true; loop: true; volume: 0.3"
+            ></a-entity>
 
             <a-entity position="2.5 0 -2.5">
                 <a-plane
