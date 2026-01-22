@@ -200,6 +200,21 @@ AFRAME.registerComponent('rotate-on-game', {
   }
 });
 
+//Alarm Sound
+AFRAME.registerComponent('game-sounds', {
+  init() {
+    const alarm = document.querySelector('#alarmSound');
+
+    this.el.sceneEl.addEventListener('game-start', () => {
+      alarm.components.sound.playSound();
+    });
+
+    this.el.sceneEl.addEventListener('game-end', () => {
+      alarm.components.sound.stopSound();
+    });
+  }
+});
+
 </script>
 </head>
 
@@ -295,12 +310,18 @@ AFRAME.registerComponent('rotate-on-game', {
 
   
 <!--World-->
-  <!--GameTimer and Environment-->
+  <!--GameTimer Environment -->
   <body>
-    <a-scene game-timer="duration: 30" environment="preset: starry; ground: noise; groundTexture: none; dressing: none" fog="color: #940000; far: 84">
-   
+    <a-scene game-sounds game-timer="duration: 30" environment="preset: starry; ground: noise; groundTexture: none; dressing: none" fog="color: #940000; far: 84">
+
     <a-entity position="0 0 -3" sound="src: #Bass; autoplay: true; loop: true; volume: 0.3"></a-entity>
     <a-entity position="0 0 -3" sound="src: #Music; autoplay: true; loop: true"></a-entity>
+    <a-entity
+      id="alarmSound"
+      position="0 1.75 -8"
+      sound="src: #Alarm; autoplay: false; loop: false; volume: 0.8">
+    </a-entity>
+
 
 
 <!--Eyes in the World-->
@@ -311,8 +332,7 @@ AFRAME.registerComponent('rotate-on-game', {
 
 
 <!--Game Tittle-->
-<a-entity position="0 0.3085 -4.86364" scale="0.6 0.6 0.6" text="align: center; color: #ffffff; font: monoid; value: Think Where You Look; width: 20" rotation="-27.127259768263958 0 0">
-  </a-entity>
+<a-entity position="0 0.3085 -4.86364" scale="0.6 0.6 0.6" text="align: center; color: #ffffff; font: monoid; value: Think Where You Look; width: 20" rotation="-27.127259768263958 0 0"></a-entity>
 
 
 
@@ -403,11 +423,11 @@ AFRAME.registerComponent('rotate-on-game', {
       scale="0.25 0.25 0.25" 
       rotation="-20 180 0" 
       material="emissiveIntensity: 5"
-      sound="src: #Laser; startEvents: mousedown"
+      sound="src: #Laser; on: mousedown; volume: 0.75; poolSize: 10;"
       animation__press="property: scale; from: 0.25 0.25 0.25; to: 0.35 0.15 0.25; dir: reverse; dur: 100; easing: easeInQuad; startEvents: mousedown">
         <a-entity id="gun" shooter click-to-shoot rotation="-15 180 0"></a-entity>
         <a-entity geometry="primitive: ring" color="white" scale="0.1 0.1 0.1" rotation="0 180 0" position="0 0.5 5" material="emissive: #d6d6d6"></a-entity>
-       <a-cursor color="white"></a-cursor>
+        <a-cursor color="white"></a-cursor>
       </a-entity>
       
       <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
