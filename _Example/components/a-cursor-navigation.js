@@ -132,7 +132,7 @@
   // ============================================================================
   AFRAME.registerComponent(
     "raycast-exclude",
-    createMeshMarkerComponent("raycastExclude")
+    createMeshMarkerComponent("raycastExclude"),
   );
 
   // ============================================================================
@@ -219,7 +219,7 @@
             this._setupCursor();
             this._setupDragDetection();
           },
-          { once: true }
+          { once: true },
         );
       }
     },
@@ -251,7 +251,7 @@
       const geo = new THREE.RingGeometry(
         DEFAULTS.INDICATOR_INNER_RADIUS,
         DEFAULTS.INDICATOR_OUTER_RADIUS,
-        DEFAULTS.INDICATOR_SEGMENTS
+        DEFAULTS.INDICATOR_SEGMENTS,
       );
       geo.rotateX(-Math.PI / 2);
       geo.translate(0, DEFAULTS.INDICATOR_Y_OFFSET, 0);
@@ -262,7 +262,7 @@
           color: this.data.cursorColor,
           transparent: true,
           opacity: this.data.cursorOpacity,
-        })
+        }),
       );
       this.indicator.visible = false;
       this.el.sceneEl.object3D.add(this.indicator);
@@ -357,7 +357,7 @@
           () => {
             findCamera();
           },
-          { once: true }
+          { once: true },
         );
       }
     },
@@ -463,7 +463,7 @@
         .normalize();
 
       const angle = THREE.MathUtils.radToDeg(
-        this._vec3.up.angleTo(worldNormal)
+        this._vec3.up.angleTo(worldNormal),
       );
       if (angle > this.data.landingMaxAngle) return null;
 
@@ -518,7 +518,7 @@
         this._vec3.end
           .toArray()
           .map((n) => n.toFixed(2))
-          .join(", ")
+          .join(", "),
       );
     },
 
@@ -539,7 +539,7 @@
       this.moveTarget.position.lerpVectors(
         this._vec3.start,
         this._vec3.end,
-        eased
+        eased,
       );
 
       // Rotation
@@ -548,7 +548,7 @@
         this.moveTarget.quaternion.slerpQuaternions(
           this._quat.start,
           this._quat.end,
-          rotT
+          rotT,
         );
       }
 
@@ -574,7 +574,7 @@
         this._quat.temp.setFromUnitVectors(this._vec3.up, hit.normal);
         this.indicator.quaternion.slerp(
           this._quat.temp,
-          DEFAULTS.INDICATOR_LERP_FACTOR
+          DEFAULTS.INDICATOR_LERP_FACTOR,
         );
       }
     },
@@ -753,7 +753,7 @@
       this._vrDelta = new THREE.Vector3(
         targetPosition.x - this._headOffset.x,
         targetPosition.y - this._headOffset.y,
-        targetPosition.z - this._headOffset.z
+        targetPosition.z - this._headOffset.z,
       );
       this._vrApplied = new THREE.Vector3();
 
@@ -788,8 +788,8 @@
             THREE.MathUtils.degToRad(targetRotation.x),
             THREE.MathUtils.degToRad(targetRotation.y),
             THREE.MathUtils.degToRad(targetRotation.z),
-            "YXZ"
-          )
+            "YXZ",
+          ),
         );
       }
 
@@ -807,7 +807,7 @@
 
       const transform = new XRRigidTransform(
         { x: -offset.x, y: -offset.y, z: -offset.z, w: 1 },
-        { x: 0, y: 0, z: 0, w: 1 }
+        { x: 0, y: 0, z: 0, w: 1 },
       );
       xrManager.setReferenceSpace(baseSpace.getOffsetReferenceSpace(transform));
     },
@@ -817,7 +817,7 @@
 
       const progress = Math.min(
         (performance.now() - this._animStart) / this.data.duration,
-        1
+        1,
       );
       const eased = easeInOutQuad(progress);
 
@@ -825,7 +825,7 @@
         const target = this._tempVec.copy(this._vrDelta).multiplyScalar(eased);
         const increment = new THREE.Vector3().subVectors(
           target,
-          this._vrApplied
+          this._vrApplied,
         );
         if (increment.lengthSq() > 0.0001) {
           this._applyVROffset(increment);
@@ -835,13 +835,13 @@
         this._moveTarget.position.lerpVectors(
           this._startPos,
           this._endPos,
-          eased
+          eased,
         );
         if (this._animateRotation) {
           this._moveTarget.quaternion.slerpQuaternions(
             this._startQuat,
             this._endQuat,
-            eased
+            eased,
           );
         }
       }
@@ -857,7 +857,7 @@
       if (this.useVROffset && this._vrDelta) {
         const remaining = new THREE.Vector3().subVectors(
           this._vrDelta,
-          this._vrApplied
+          this._vrApplied,
         );
         if (remaining.lengthSq() > 0.0001) this._applyVROffset(remaining);
         this._vrDelta = this._vrApplied = null;
@@ -913,7 +913,7 @@
           if (this.cameraEl) {
             localStorage.setItem(
               "cameraRotation",
-              JSON.stringify(this.cameraEl.getAttribute("rotation"))
+              JSON.stringify(this.cameraEl.getAttribute("rotation")),
             );
           }
         } catch (e) {
