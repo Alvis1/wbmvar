@@ -2,9 +2,11 @@
 <html lang="lv">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <title>Vidzemes_Podnieka_Gustava_Ozolina_darbnica</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>🏺</text></svg>">
 
+    
     <script type="importmap">
       {
         "imports": {
@@ -36,6 +38,7 @@
       font-weight: bold;
       line-height: 1.6;
       pointer-events: none;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 0, 0, 0.3);
     ">Vidzemes podnieka <br>Gustava Ozoliņa (1866–1942) <br>darbnīca</div>
 
     <!-- VR Button -->
@@ -52,48 +55,16 @@
       cursor: pointer;
       z-index: 1000;
       font-weight: bold;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 0, 0, 0.3);
     ">Enter VR</button>
-
-    <!-- Object Info Popup -->
-    <div id="object-popup-overlay" style="
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.7);
-      z-index: 9999;
-      display: none;
-    "></div>
     
-    <div id="object-popup" style="
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-      color: white;
-      padding: 60px;
-      border-radius: 20px;
-      max-width: 700px;
-      text-align: center;
-      z-index: 10000;
-      display: none;
-      font-family: Arial, sans-serif;
-      box-shadow: 0 0 80px rgba(76, 175, 80, 0.8), inset 0 0 40px rgba(76, 175, 80, 0.2);
-      pointer-events: auto;
-    ">
-      <h2 id="object-title" style="margin: 0 0 30px 0; color: #4CAF50; font-size: 42px; font-weight: bold; text-shadow: 0 2px 10px rgba(0,0,0,0.8);"></h2>
-      <p id="object-description" style="margin: 0 0 30px 0; line-height: 1.9; font-size: 22px; color: #e0e0e0;"></p>
-      <p style="margin: 0; font-size: 14px; color: #888; font-style: italic;">(Release trigger to close)</p>
-    </div>
 
     <script type="module">
       import AFRAME from "aframe";
       import { SplatMesh, SparkRenderer } from "@sparkjsdev/spark";
 
-      // expose AFRAME globally for extras + physics
       window.AFRAME = AFRAME;
+
 
       // load aframe-extras AFTER AFRAME exists
       await new Promise((resolve) => {
@@ -104,84 +75,10 @@
         document.head.appendChild(s);
       });
 
-      // Load VR popup banner component
-      const bannerScript = document.createElement("script");
-      bannerScript.src = "components/vr-popup-banner.js";
-      document.head.appendChild(bannerScript);
-
       // Raycaster component for hand pointing
       AFRAME.registerComponent("hand-raycaster", {
         init() {
-          const hand = this.el;
-          let lastBanner = null;
-          
-          hand.addEventListener("triggerdown", () => {
-            // Get camera position
-            const camera = document.querySelector("[camera]");
-            if (!camera) return;
-            
-            const cameraPos = new THREE.Vector3();
-            camera.object3D.getWorldPosition(cameraPos);
-            
-            const handPos = new THREE.Vector3();
-            hand.object3D.getWorldPosition(handPos);
-            
-            // Direction from camera to hand
-            const direction = new THREE.Vector3().subVectors(handPos, cameraPos).normalize();
-            
-            const raycaster = new THREE.Raycaster(cameraPos, direction);
-            const scene = hand.sceneEl.object3D;
-            const intersects = raycaster.intersectObjects(scene.children, true);
-            
-            // Find first banner in intersections
-            for (let i = 0; i < intersects.length; i++) {
-              const obj = intersects[i].object;
-              
-              // Find parent banner entity
-              let currentObj = obj;
-              while (currentObj) {
-                if (currentObj.el && currentObj.el.classList.contains("expandable-banner")) {
-                  // Trigger banner click
-                  currentObj.el.dispatchEvent(new CustomEvent("click"));
-                  return;
-                }
-                currentObj = currentObj.parent;
-              }
-            }
-          });
-          
-          // Visual feedback - show distance to banners
-          this.tick = () => {
-            const banners = document.querySelectorAll(".expandable-banner");
-            const handPos = new THREE.Vector3();
-            hand.object3D.getWorldPosition(handPos);
-            
-            let closestBanner = null;
-            let closestDist = Infinity;
-            
-            banners.forEach(banner => {
-              if (!banner.object3D) return;
-              
-              const bannerPos = new THREE.Vector3();
-              banner.object3D.getWorldPosition(bannerPos);
-              const dist = handPos.distanceTo(bannerPos);
-              
-              if (dist < closestDist) {
-                closestDist = dist;
-                closestBanner = banner;
-              }
-            });
-            
-            // Highlight closest banner if within range
-            banners.forEach(banner => {
-              const bgEl = banner.querySelector("[position='0 0 -0.01']");
-              if (bgEl && banner === closestBanner && closestDist < 2) {
-                bgEl.setAttribute("material", "color: #000000; transparent: true; opacity: 1");
-              } else if (bgEl) {
-                bgEl.setAttribute("material", "color: #000000; transparent: true; opacity: 0.7");
-              }
-            });
-          };
+          // Component for hand tracking - minimal implementation
         }
       });
 
@@ -203,6 +100,23 @@
         }
       });
 
+      // Component to hide/show controller visuals based on grab state
+      AFRAME.registerComponent("toggle-controller-visibility", {
+        init() {
+          this.isGrabbed = false;
+        },
+        
+        tick() {
+          const visible = !this.isGrabbed;
+          this.el.object3D.visible = visible;
+          this.el.object3D.traverse((node) => {
+            if (node.isMesh || node.isLine || node.isGroup) {
+              node.visible = visible;
+            }
+          });
+        }
+      });
+
       // Simple grab component for VR controllers
       AFRAME.registerComponent("simple-grab", {
         init() {
@@ -212,6 +126,7 @@
           let lastHandPos = new THREE.Vector3();
           let handVelocity = new THREE.Vector3();
           const hand = this.el;
+          const toggleVisibility = hand.getAttribute("toggle-controller-visibility") !== null;
 
           hand.addEventListener("triggerdown", (e) => {
             const handWorldPos = new THREE.Vector3();
@@ -233,6 +148,15 @@
 
             if (closest) {
               heldObject = closest;
+              
+              // Hide controller
+              if (toggleVisibility) {
+                const toggleComp = hand.components["toggle-controller-visibility"];
+                if (toggleComp) {
+                  toggleComp.isGrabbed = true;
+                }
+              }
+              
               // Store original rotation
               const rot = heldObject.getAttribute("rotation");
               originalRot = { x: rot.x, y: rot.y, z: rot.z };
@@ -259,6 +183,14 @@
 
           hand.addEventListener("triggerup", (e) => {
             if (heldObject) {
+              // Show controller
+              if (toggleVisibility) {
+                const toggleComp = hand.components["toggle-controller-visibility"];
+                if (toggleComp) {
+                  toggleComp.isGrabbed = false;
+                }
+              }
+              
               heldObject.removeAttribute("grabbed");
               
               // Only apply throw velocity to small objects (not the wheel)
@@ -481,23 +413,45 @@
         }
       });
 
+      // Info Display Component - shows object info on the info screen
+      AFRAME.registerComponent("info-display", {
+        init() {
+          this.objectsData = {
+            obj1: {
+              title: "Ceramic Vase",
+              description: "A beautiful handcrafted ceramic vase. Rotate to examine the intricate details and craftsmanship."
+            },
+            obj2: {
+              title: "Vase by Krievs",
+              description: "An elegant pottery piece created by master craftsman Krievs. Notice the unique glaze patterns and smooth curves."
+            },
+            obj3: {
+              title: "Ceramic Jug - Dranda",
+              description: "A traditional ceramic jug from the Dranda Collection. Examine the craftsmanship and unique handle design."
+            }
+          };
+
+          this.currentObject = null;
+        }
+      });
+
       // Overlay click-to-close handler
-      document.getElementById("object-popup-overlay").addEventListener("click", () => {
-        document.getElementById("object-popup").style.display = "none";
-        document.getElementById("object-popup-overlay").style.display = "none";
+      document.getElementById("object-popup-overlay")?.addEventListener("click", () => {
+        const popup = document.getElementById("object-popup");
+        const overlay = document.getElementById("object-popup-overlay");
+        if (popup) popup.style.display = "none";
+        if (overlay) overlay.style.display = "none";
       });
 
       // create scene AFTER everything is registered
       document.querySelector("#app").innerHTML = `
-        <a-scene background="color: black" xr-mode-ui="enabled: true">
+        <a-scene background="color: black" xr-mode-ui="disabled" vr-mode-ui="disabled">
 
           <a-assets>
-            <a-asset-item id="navmesh-glb" src="objects/Pottery_collider.glb"></a-asset-item>
-            <audio id="background-music" src="objects/Ej_projam_ledutinu.mp3" preload="auto"></audio>
+            <a-asset-item id="navmesh-glb" src="objects/Pottery_collider.glb" crossorigin="anonymous" onerror="console.error('Failed to load navmesh')"></a-asset-item>
           </a-assets>
 
-          <!-- Background Music -->
-          <a-entity id="audio-entity" sound="src: #background-music; loop: true; volume: 0.5; autoplay: true"></a-entity>
+          <!-- Background Music - ONLY loaded and played in VR mode via direct Three.js Audio -->
 
           <!-- PLAYER (aframe-extras movement) -->
           <a-entity
@@ -506,16 +460,18 @@
             rotation="0 47.561 0"
             movement-controls="speed: 0.1 ; constrainToNavMesh: true"
           >
-            <a-entity camera look-controls position="0 2.5same 0" vr-popup-banner></a-entity>
+            <a-entity camera look-controls position="0 2.5 0"></a-entity>
 
             <a-entity id="leftHand" 
               oculus-touch-controls="hand: left"
               simple-grab
+              toggle-controller-visibility
               hand-raycaster>
             </a-entity>
             <a-entity id="rightHand" 
               oculus-touch-controls="hand: right"
               simple-grab
+              toggle-controller-visibility
               hand-raycaster>
             </a-entity>
           </a-entity>
@@ -568,8 +524,8 @@ scale="1 0.7 1">
         <!-- GRABBABLE OBJECTS at scene root -->
 <a-entity 
 gltf-model="objects/ozolins_2_fake.glb" 
-position="-2.74342 0.82753 0.7294" 
-scale="0.4 0.4 0.4" 
+position="-2.7803 0.74147 0.7294" 
+scale="0.45 0.45 0.45" 
 grabbable="" id="obj1"
 data-title="Ceramic Vase"
 data-description="A beautiful handcrafted ceramic vase. Rotate to examine the intricate details and craftsmanship.">
@@ -577,7 +533,7 @@ data-description="A beautiful handcrafted ceramic vase. Rotate to examine the in
 
 <a-entity 
 gltf-model="objects/ceramic_vase_3d_Krievs.glb" 
-position="-2.78748 0.88117 1.22016" 
+position="-2.19451 1.26547 -2.01672" 
 scale="0.5 0.5 0.5" 
 grabbable="" id="obj2"
 data-title="Vase by Krievs"
@@ -586,95 +542,169 @@ data-description="An elegant pottery piece created by master craftsman Krievs. N
 
 <a-entity 
 gltf-model="objects/ceramic_jug_Dranda_2.glb" 
-position="-2.92266 0.7591 1.72496" 
-scale="0.35 0.35 0.3" 
+position="-2.85864 0.82297 1.50826" 
+scale="0.45 0.45 0.45" 
 grabbable="" id="obj3"
 data-title="Ceramic Jug - Dranda Collection"
 data-description="A traditional ceramic jug from the Dranda Collection. Examine the craftsmanship and unique handle design.">
+rotation="0 45 0"
 </a-entity>
 
-        </a-scene>
+<a-plane 
+id="info-objects" 
+position="0.0049 1.95642 4.30412" 
+width="0.3" height="0.3" 
+material="src: objects/Info_display_1920x108px.png; side: double; transparent: true" 
+scale="18.63052 11.39561 37.32803" 
+rotation="0 180 0">
+</a-plane>
+
       `;
 
-      // VR Button Handler
-      document.getElementById("vr-button").addEventListener("click", () => {
+      // Wait for scene to be ready before setting up event listeners
+      setTimeout(() => {
         const scene = document.querySelector("a-scene");
-        scene.enterVR();
-      });
-
-      // Hide welcome text when entering VR
-      document.querySelector("a-scene").addEventListener("enter-vr", () => {
-        document.getElementById("welcome-text").style.display = "none";
-        
-        // Start background music when entering VR
-        const audioEntity = document.querySelector("#audio-entity");
-        const sound = audioEntity.components.sound;
-        if (sound && sound.pool && sound.pool.children[0]) {
-          const audio = sound.pool.children[0];
-          if (!audio.isPlaying) {
-            audio.play();
-            console.log("Background music started");
-          }
+        if (!scene) {
+          console.error("Scene not found");
+          return;
         }
-      });
 
-      // Show welcome text when exiting VR
-      document.querySelector("a-scene").addEventListener("exit-vr", () => {
-        document.getElementById("welcome-text").style.display = "block";
-        
-        // Stop background music when exiting VR
-        const audioEntity = document.querySelector("#audio-entity");
-        const sound = audioEntity.components.sound;
-        if (sound && sound.pool && sound.pool.children[0]) {
-          const audio = sound.pool.children[0];
-          if (audio.isPlaying) {
-            audio.stop();
-            console.log("Background music stopped");
-          }
+        // Clean up any existing VR sessions on page load
+        if (scene.is("vr-mode")) {
+          scene.exitVR().catch(e => {});
         }
-      });
 
-      // Start background music with AudioContext resume
-      const scene = document.querySelector("a-scene");
-      const audioEntity = document.querySelector("#audio-entity");
-      let audioStarted = false;
+        // Handle WebGL context loss/restore
+        const canvas = scene.canvas;
+        if (canvas) {
+          canvas.addEventListener("webglcontextlost", (event) => {
+            event.preventDefault();
+          }, false);
+        }
 
-      const resumeAudioContext = () => {
-        if (audioStarted) return;
-        audioStarted = true;
+        // VR Button Handler
+        let vrTransitioning = false;
+        document.getElementById("vr-button").addEventListener("click", () => {
+          if (vrTransitioning) return;
 
-        // Resume AudioContext
-        const audioContext = THREE.AudioContext.getContext();
-        if (audioContext.state === "suspended") {
-          audioContext.resume().then(() => {
-            console.log("AudioContext resumed");
-            playBackgroundMusic();
+          if (scene.is("vr-mode")) {
+            scene.exitVR();
+            return;
+          }
+
+          vrTransitioning = true;
+          
+          const attemptVREntry = (retries = 0) => {
+            scene.enterVR().then(() => {
+              vrTransitioning = false;
+            }).catch((error) => {
+              if (error.message.includes("InvalidStateError") && retries < 2) {
+                setTimeout(() => attemptVREntry(retries + 1), 500);
+                return;
+              }
+              vrTransitioning = false;
+            });
+          };
+          
+          attemptVREntry();
+        });
+
+        // Hide welcome text and start audio when entering VR
+        scene.addEventListener("enter-vr", () => {
+          isInVRMode = true;
+          const welcomeText = document.getElementById("welcome-text");
+          if (welcomeText) welcomeText.style.display = "none";
+          setTimeout(() => {
+            playAudioInVR();
+          }, 500);
+        });
+
+        // Helper to actually play the audio using direct Three.js Audio
+        let vrAudio = null;
+        let vrAudioListener = null;
+        let isInVRMode = false;
+        
+        const playAudioInVR = () => {
+          if (!isInVRMode || !scene.is("vr-mode")) return;
+
+          const camera = document.querySelector("[camera]");
+          if (!camera || !camera.components.camera) return;
+
+          const threeCamera = camera.components.camera.camera;
+          if (!threeCamera) return;
+
+          vrAudioListener = new THREE.AudioListener();
+          threeCamera.add(vrAudioListener);
+
+          if (vrAudioListener.context.state === "suspended") {
+            vrAudioListener.context.resume().then(() => {
+              createAndPlayAudio(vrAudioListener);
+            }).catch(e => {});
+          } else {
+            createAndPlayAudio(vrAudioListener);
+          }
+        };
+
+        const createAndPlayAudio = (audioListener) => {
+          if (!isInVRMode || !scene.is("vr-mode")) return;
+
+          if (vrAudio) {
+            try { vrAudio.stop(); } catch(e) {}
+            vrAudio = null;
+          }
+
+          vrAudio = new THREE.Audio(audioListener);
+          
+          const audioLoader = new THREE.AudioLoader();
+          audioLoader.load("objects/Ej_projam_ledutinu.mp3", (audioBuffer) => {
+            if (!isInVRMode || !scene.is("vr-mode") || !vrAudio) return;
+
+            try {
+              vrAudio.setBuffer(audioBuffer);
+              vrAudio.setLoop(true);
+              vrAudio.setVolume(1.0);
+              vrAudio.play();
+            } catch(e) {}
           });
-        } else {
-          playBackgroundMusic();
-        }
+        };
 
-        document.removeEventListener("click", resumeAudioContext);
-        document.removeEventListener("keydown", resumeAudioContext);
-        window.removeEventListener("touchstart", resumeAudioContext);
-      };
+        // Show welcome text and stop audio when exiting VR
+        scene.addEventListener("exit-vr", () => {
+          isInVRMode = false;
+          const welcomeText = document.getElementById("welcome-text");
+          if (welcomeText) welcomeText.style.display = "block";
+          stopAudio();
+        });
 
-      const playBackgroundMusic = () => {
-        setTimeout(() => {
-          const sound = audioEntity.components.sound;
-          if (sound && sound.pool && sound.pool.children[0]) {
-            const audio = sound.pool.children[0];
-            if (!audio.isPlaying) {
-              audio.play();
-              console.log("Background music started");
-            }
+        // Function to stop audio
+        const stopAudio = () => {
+          if (vrAudio) {
+            try {
+              vrAudio.stop();
+            } catch(e) {}
+            vrAudio = null;
           }
-        }, 100);
-      };
+          
+          if (vrAudioListener) {
+            const camera = document.querySelector("[camera]");
+            if (camera && camera.components.camera && camera.components.camera.camera) {
+              const threeCamera = camera.components.camera.camera;
+              try {
+                threeCamera.remove(vrAudioListener);
+              } catch(e) {}
+            }
+            vrAudioListener = null;
+          }
+        };
 
-      document.addEventListener("click", resumeAudioContext);
-      document.addEventListener("keydown", resumeAudioContext);
-      window.addEventListener("touchstart", resumeAudioContext);
+        // ESC key handler - stop audio when in VR mode
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && scene.is("vr-mode")) {
+            stopAudio();
+            scene.exitVR();
+          }
+        });
+      }, 100);
     </script>
   </body>
 </html>
